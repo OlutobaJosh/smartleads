@@ -8,9 +8,10 @@ export default function Home() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const set = (e) => setForm(f => ({...f, [e.target.name]: e.target.value}));
+  const set = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+  setForm(f => ({...f, [e.target.name]: e.target.value}));
 
-  async function submit(e) {
+ async function submit(e: React.FormEvent<HTMLButtonElement>) {
     e.preventDefault();
     setLoading(true);
     await fetch('/api/inquiry', {
