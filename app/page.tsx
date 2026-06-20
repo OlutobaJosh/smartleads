@@ -73,10 +73,10 @@ export default function Home() {
             <p style={{ color: '#888', fontSize: '0.875rem', marginBottom: '28px' }}>Submit an inquiry and watch the AI respond in under 10 seconds.</p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {[
-                { label: 'Your Name', name: 'name', type: 'text', placeholder: 'John Smith' },
-                { label: 'Email Address', name: 'email', type: 'email', placeholder: 'john@company.com' },
-              ].map(f => (
+                {([
+  { label: 'Your Name', name: 'name', type: 'text', placeholder: 'John Smith' },
+  { label: 'Email Address', name: 'email', type: 'email', placeholder: 'john@company.com' },
+] as const).map(f => (
                 <div key={f.name}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>{f.label}</label>
                   <input name={f.name} type={f.type} placeholder={f.placeholder} value={form[f.name]} onChange={set}
