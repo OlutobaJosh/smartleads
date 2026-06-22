@@ -1,130 +1,254 @@
 'use client';
 import { useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Card,
+  CardHeader,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
+
+type ScoreResult = { score: number; label: 'HOT' | 'WARM' | 'COLD'; reason: string };
+type SubmitState =
+  | { status: 'idle' }
+  | { status: 'sending' }
+  | { status: 'sent'; result: ScoreResult }
+  | { status: 'error'; message: string };
+
+const FIELDS = [
+  { label: 'name', name: 'name' as const, type: 'text', placeholder: 'Jane Okafor' },
+  { label: 'email', name: 'email' as const, type: 'email', placeholder: 'jane@company.com' },
+];
+
+const PIPELINE = [
+  { idx: '00', title: 'inquiry.received', desc: 'Raw form payload hits the inquiry endpoint.' },
+  { idx: '01', title: 'llm.qualify()', desc: 'Groq model scores intent, budget, and urgency.' },
+  { idx: '02', title: 'score.assign', desc: 'Lead scored 0–100, tagged hot / warm / cold.' },
+  { idx: '03', title: 'reply.dispatch', desc: 'Logged and routed to the automation pipeline.' },
+];
 
 export default function Home() {
   const [form, setForm] = useState({
-    name: '', email: '', businessType: '', budget: '', message: ''
+    name: '',
+    email: '',
+    businessType: '',
+    budget: '',
+    message: '',
   });
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<SubmitState>({ status: 'idle' });
 
-  const set = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-  setForm(f => ({...f, [e.target.name]: e.target.value}));
+  const set = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
- async function submit(e: React.FormEvent<HTMLButtonElement>) {
+  async function submit(e: React.FormEvent<HTMLButtonElement>) {
     e.preventDefault();
-    setLoading(true);
-    await fetch('/api/inquiry', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    });
-    setSent(true);
-    setLoading(false);
+    setState({ status: 'sending' });
+    try {
+      const res = await fetch('/api/inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success) {
+        setState({
+          status: 'error',
+          message: data?.error ?? 'Something went wrong. Please try again.',
+        });
+        return;
+      }
+
+      setState({
+        status: 'sent',
+        result: { score: data.score, label: data.label, reason: data.reason },
+      });
+    } catch {
+      setState({ status: 'error', message: 'Could not reach the server. Please try again.' });
+    }
   }
 
+  const tagVariant =
+    state.status === 'sent'
+      ? state.result.label === 'HOT'
+        ? 'hot'
+        : state.result.label === 'WARM'
+        ? 'warm'
+        : 'cold'
+      : 'cold';
+
   return (
-    <main style={{ minHeight: '100vh', background: '#0a0a0f', color: '#f0f0f0', fontFamily: 'system-ui, sans-serif' }}>
-      {/* Nav */}
-      <nav style={{ padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <span style={{ fontWeight: 800, fontSize: '1.3rem', color: '#7c3aed' }}>SmartLeads</span>
-        <a href="/dashboard" style={{ color: '#a78bfa', textDecoration: 'none', fontSize: '0.875rem' }}>Dashboard →</a>
+    <main className="min-h-screen bg-background text-foreground">
+      <nav className="flex items-center justify-between border-b border-border px-10 py-5">
+        <span className="flex items-center gap-2 font-mono text-sm font-semibold">
+          <span className="inline-block h-1.5 w-1.5 bg-accent" />
+          SmartLeads
+        </span>
+        <a
+          href="/dashboard"
+          className="group flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          dashboard
+          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+        </a>
       </nav>
 
-      {/* Hero */}
-      <section style={{ maxWidth: '900px', margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
-        <div style={{ display: 'inline-block', padding: '6px 16px', background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.4)', borderRadius: '100px', fontSize: '0.75rem', color: '#a78bfa', marginBottom: '24px', letterSpacing: '0.1em' }}>
-          AI-POWERED AUTOMATION
-        </div>
-        <h1 style={{ fontSize: 'clamp(2.5rem,6vw,4rem)', fontWeight: 800, lineHeight: 1.1, marginBottom: '20px', letterSpacing: '-0.02em' }}>
-          Never miss a hot lead again.
+      <section className="mx-auto max-w-3xl px-6 py-20">
+        <Badge className="mb-7">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_0_3px_rgba(245,166,35,0.15)]" />
+          lead-qualification engine · v2
+        </Badge>
+
+        <h1 className="mb-5 text-[2.4rem] font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+          Score every inquiry
+          <br />
+          before it goes cold.
         </h1>
-        <p style={{ fontSize: '1.1rem', color: '#888', lineHeight: 1.7, maxWidth: '560px', margin: '0 auto 48px' }}>
-          SmartLeads uses AI to instantly score, qualify, and respond to every business inquiry — automatically. No manual work required.
+
+        <p className="mb-14 max-w-xl text-base leading-relaxed text-muted-foreground">
+          SmartLeads parses incoming form submissions, scores intent against budget and
+          urgency, and fires a qualified reply — automatically, in under ten seconds.
         </p>
 
-        {/* How it works */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '64px' }}>
-          {[
-            { icon: '📝', step: '01', title: 'Inquiry comes in', desc: 'Client fills your contact form' },
-            { icon: '🤖', step: '02', title: 'AI qualifies it', desc: 'Groq AI scores and analyses the lead' },
-            { icon: '✉️', step: '03', title: 'Auto-reply sent', desc: 'Personalised email sent in seconds' },
-            { icon: '📊', step: '04', title: 'Dashboard updated', desc: 'Lead logged with score and summary' },
-          ].map(s => (
-            <div key={s.step} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '24px', textAlign: 'left' }}>
-              <div style={{ fontSize: '1.8rem', marginBottom: '12px' }}>{s.icon}</div>
-              <div style={{ fontSize: '0.65rem', color: '#7c3aed', fontWeight: 700, letterSpacing: '0.15em', marginBottom: '6px' }}>STEP {s.step}</div>
-              <div style={{ fontWeight: 700, marginBottom: '6px', fontSize: '0.95rem' }}>{s.title}</div>
-              <div style={{ fontSize: '0.8rem', color: '#666' }}>{s.desc}</div>
+        <div className="mb-16 overflow-hidden rounded-md border border-border bg-card/40">
+          {PIPELINE.map(s => (
+            <div key={s.idx} className="flex gap-4 border-b border-border px-5 py-4 last:border-b-0">
+              <span className="w-6 shrink-0 pt-0.5 font-mono text-xs text-muted-foreground/60">
+                {s.idx}
+              </span>
+              <div>
+                <div className="mb-1 font-mono text-sm text-accent">{s.title}</div>
+                <div className="text-sm leading-relaxed text-muted-foreground">{s.desc}</div>
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Form */}
-        {sent ? (
-          <div style={{ background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: '16px', padding: '48px', textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>✅</div>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '8px' }}>Inquiry received!</h3>
-            <p style={{ color: '#888' }}>Check your email — our AI has already sent you a personalised response.</p>
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-2.5">
+            <span className="font-mono text-xs text-muted-foreground/60">live_demo.tsx</span>
+            <span className="flex gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-white/15" />
+              <span className="h-2 w-2 rounded-full bg-white/15" />
+              <span className="h-2 w-2 rounded-full bg-white/15" />
+            </span>
           </div>
-        ) : (
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '40px', textAlign: 'left', maxWidth: '560px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '6px' }}>Try it live</h2>
-            <p style={{ color: '#888', fontSize: '0.875rem', marginBottom: '28px' }}>Submit an inquiry and watch the AI respond in under 10 seconds.</p>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {([
-  { label: 'Your Name', name: 'name', type: 'text', placeholder: 'John Smith' },
-  { label: 'Email Address', name: 'email', type: 'email', placeholder: 'john@company.com' },
-] as const).map(f => (
-                <div key={f.name}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>{f.label}</label>
-                  <input name={f.name} type={f.type} placeholder={f.placeholder} value={form[f.name]} onChange={set}
-                    style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f0f0f0', fontSize: '0.875rem', outline: 'none', fontFamily: 'inherit' }} />
+
+          <CardHeader className="pt-6">
+            <CardDescription>
+              Submit a real inquiry below — the engine scores it live and shows its reasoning.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              {FIELDS.map(f => (
+                <div key={f.name} className="flex flex-col gap-1.5">
+                  <Label htmlFor={f.name}>{f.label}</Label>
+                  <Input
+                    id={f.name}
+                    name={f.name}
+                    type={f.type}
+                    placeholder={f.placeholder}
+                    value={form[f.name]}
+                    onChange={set}
+                    autoComplete="off"
+                  />
                 </div>
               ))}
 
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Business Type</label>
-                <select name="businessType" value={form.businessType} onChange={set}
-                  style={{ width: '100%', padding: '11px 14px', background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f0f0f0', fontSize: '0.875rem', fontFamily: 'inherit' }}>
-                  <option value="">Select type...</option>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="businessType">business_type</Label>
+                <Select id="businessType" name="businessType" value={form.businessType} onChange={set}>
+                  <option value="">— select —</option>
                   <option>E-commerce Store</option>
                   <option>SaaS / Software</option>
                   <option>Agency / Consultancy</option>
                   <option>Real Estate</option>
                   <option>Healthcare</option>
                   <option>Other</option>
-                </select>
+                </Select>
               </div>
 
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Budget Range</label>
-                <select name="budget" value={form.budget} onChange={set}
-                  style={{ width: '100%', padding: '11px 14px', background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f0f0f0', fontSize: '0.875rem', fontFamily: 'inherit' }}>
-                  <option value="">Select budget...</option>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="budget">budget_range</Label>
+                <Select id="budget" name="budget" value={form.budget} onChange={set}>
+                  <option value="">— select —</option>
                   <option>Under $100</option>
                   <option>$100 – $500</option>
                   <option>$500 – $1,000</option>
                   <option>$1,000 – $5,000</option>
                   <option>$5,000+</option>
-                </select>
+                </Select>
               </div>
 
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Project Description</label>
-                <textarea name="message" placeholder="Tell us about your project..." value={form.message} onChange={set} rows={4}
-                  style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f0f0f0', fontSize: '0.875rem', fontFamily: 'inherit', resize: 'vertical' }} />
+              <div className="col-span-full flex flex-col gap-1.5">
+                <Label htmlFor="message">project_description</Label>
+                <Textarea
+                  id="message"
+                  name="message"
+                  placeholder="What are you trying to build?"
+                  value={form.message}
+                  onChange={set}
+                  rows={3}
+                />
               </div>
-
-              <button onClick={submit} disabled={loading || !form.name || !form.email}
-                style={{ width: '100%', padding: '14px', background: loading ? '#444' : 'linear-gradient(135deg, #7c3aed, #9d5cf6)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '0.95rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-                {loading ? 'Processing with AI...' : '⚡ Submit Inquiry →'}
-              </button>
-              <p style={{ fontSize: '0.72rem', color: '#555', textAlign: 'center' }}>Watch your inbox — AI responds in under 10 seconds</p>
             </div>
-          </div>
-        )}
+          </CardContent>
+
+          <CardFooter className="flex flex-col gap-4">
+            <Button
+              onClick={submit}
+              disabled={state.status === 'sending' || !form.name || !form.email}
+              size="lg"
+              className="w-full"
+            >
+              {state.status === 'sending' ? 'scoring…' : 'run qualification →'}
+            </Button>
+
+            {state.status === 'sent' && (
+              <div
+                role="status"
+                className="w-full rounded-md border border-border border-l-2 border-l-accent bg-muted/30 px-4 py-3 font-mono"
+              >
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <span className="text-muted-foreground">LEAD_SCORE</span>
+                  <span className="font-semibold text-foreground">{state.result.score}/100</span>
+                  <Badge variant={tagVariant}>{state.result.label}</Badge>
+                </div>
+                <div className="mt-1.5 text-xs text-muted-foreground">
+                  // {state.result.reason}
+                </div>
+              </div>
+            )}
+
+            {state.status === 'error' && (
+              <div
+                role="status"
+                className="w-full rounded-md border border-border border-l-2 border-l-destructive bg-muted/30 px-4 py-3 font-mono"
+              >
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-destructive">●</span>
+                  <span className="text-foreground">inquiry.failed</span>
+                </div>
+                <div className="mt-1.5 text-xs text-muted-foreground">// {state.message}</div>
+              </div>
+            )}
+
+            <p className="w-full text-center text-xs text-muted-foreground/60">
+              no spam · no sales calls · reply hits your inbox directly
+            </p>
+          </CardFooter>
+        </Card>
       </section>
     </main>
   );
