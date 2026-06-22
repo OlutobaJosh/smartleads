@@ -108,7 +108,7 @@ export default function Home() {
           lead-qualification engine · v2
         </Badge>
 
-        <h1 className="mb-5 text-[2.4rem] font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+        <h1 className="mb-5 font-display text-[2.4rem] font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
           Score every inquiry
           <br />
           before it goes cold.
