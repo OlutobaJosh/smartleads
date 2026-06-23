@@ -1,6 +1,8 @@
 'use client';
-import { useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+
+import { useState, useRef } from 'react';
+import { ArrowRight, Zap, Bot } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,34 +10,61 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardHeader,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
+import { BackgroundPaths } from '@/components/ui/background-paths';
 
-type ScoreResult = { score: number; label: 'HOT' | 'WARM' | 'COLD'; reason: string };
+/* ─── Types ────────────────────────────────────────────────── */
+type ScoreLabel = 'HOT' | 'WARM' | 'COLD';
+
+type ScoreResult = {
+  score: number;
+  label: ScoreLabel;
+  reason: string;
+};
+
 type SubmitState =
   | { status: 'idle' }
   | { status: 'sending' }
   | { status: 'sent'; result: ScoreResult }
   | { status: 'error'; message: string };
 
-const FIELDS = [
-  { label: 'name', name: 'name' as const, type: 'text', placeholder: 'Jane Okafor' },
-  { label: 'email', name: 'email' as const, type: 'email', placeholder: 'jane@company.com' },
-];
-
+/* ─── Constants ─────────────────────────────────────────────── */
 const PIPELINE = [
-  { idx: '00', title: 'inquiry.received', desc: 'Raw form payload hits the inquiry endpoint.' },
-  { idx: '01', title: 'llm.qualify()', desc: 'Groq model scores intent, budget, and urgency.' },
-  { idx: '02', title: 'score.assign', desc: 'Lead scored 0–100, tagged hot / warm / cold.' },
-  { idx: '03', title: 'reply.dispatch', desc: 'Logged and routed to the automation pipeline.' },
+  {
+    idx: '01',
+    title: 'Receive',
+    desc: 'Inquiry hits /api/inquiry and is parsed for key signals.',
+  },
+  {
+    idx: '02',
+    title: 'Qualify',
+    desc: 'Groq AI scores intent, budget fit, and urgency 0 – 100.',
+  },
+  {
+    idx: '03',
+    title: 'Classify',
+    desc: 'Lead tagged HOT / WARM / COLD and stored in Supabase.',
+  },
+  {
+    idx: '04',
+    title: 'Dispatch',
+    desc: 'Make.com fires the right automated reply via Gmail.',
+  },
 ];
 
+const SCORE_THEME: Record<ScoreLabel, { bar: string; bg: string; border: string }> = {
+  HOT:  { bar: '#ef4444', bg: 'rgba(239,68,68,0.07)',  border: 'rgba(239,68,68,0.22)'  },
+  WARM: { bar: '#f59e0b', bg: 'rgba(245,158,11,0.07)', border: 'rgba(245,158,11,0.22)' },
+  COLD: { bar: '#60a5fa', bg: 'rgba(96,165,250,0.07)', border: 'rgba(96,165,250,0.22)' },
+};
+
+const BADGE_VARIANT: Record<ScoreLabel, 'hot' | 'warm' | 'cold'> = {
+  HOT: 'hot', WARM: 'warm', COLD: 'cold',
+};
+
+/* ─── Component ─────────────────────────────────────────────── */
 export default function Home() {
+  const formRef = useRef<HTMLElement>(null);
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -43,14 +72,16 @@ export default function Home() {
     budget: '',
     message: '',
   });
+
   const [state, setState] = useState<SubmitState>({ status: 'idle' });
 
-  const set = (
+  function set(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  ) {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  }
 
-  async function submit(e: React.FormEvent<HTMLButtonElement>) {
-    e.preventDefault();
+  async function submit() {
     setState({ status: 'sending' });
     try {
       const res = await fetch('/api/inquiry', {
@@ -59,7 +90,6 @@ export default function Home() {
         body: JSON.stringify(form),
       });
       const data = await res.json().catch(() => null);
-
       if (!res.ok || !data?.success) {
         setState({
           status: 'error',
@@ -67,108 +97,202 @@ export default function Home() {
         });
         return;
       }
-
       setState({
         status: 'sent',
         result: { score: data.score, label: data.label, reason: data.reason },
       });
     } catch {
-      setState({ status: 'error', message: 'Could not reach the server. Please try again.' });
+      setState({
+        status: 'error',
+        message: 'Could not reach the server. Check your connection and try again.',
+      });
     }
   }
 
-  const tagVariant =
-    state.status === 'sent'
-      ? state.result.label === 'HOT'
-        ? 'hot'
-        : state.result.label === 'WARM'
-        ? 'warm'
-        : 'cold'
-      : 'cold';
+  const canSubmit =
+    state.status !== 'sending' && form.name.trim() !== '' && form.email.trim() !== '';
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <nav className="flex items-center justify-between border-b border-border px-10 py-5">
-        <span className="flex items-center gap-2 font-mono text-sm font-semibold">
-          <span className="inline-block h-1.5 w-1.5 bg-accent" />
+
+      {/* ── Nav ─────────────────────────────────────────────── */}
+      <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 backdrop-blur-md sm:px-8">
+        <span className="flex items-center gap-2.5 font-mono text-sm font-bold tracking-tight">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+          </span>
           SmartLeads
         </span>
         <a
           href="/dashboard"
           className="group flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
-          dashboard
+          Dashboard
           <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
         </a>
       </nav>
 
-      <section className="mx-auto max-w-3xl px-6 py-20">
-        <Badge className="mb-7">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_0_3px_rgba(245,166,35,0.15)]" />
-          lead-qualification engine · v2
-        </Badge>
+      {/* ── Hero ────────────────────────────────────────────── */}
+      <section className="relative flex min-h-[56vh] items-center justify-center overflow-hidden px-6 pb-16 pt-20">
+        <BackgroundPaths />
 
-        <h1 className="mb-5 font-display text-[2.4rem] font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-          Score every inquiry
-          <br />
-          before it goes cold.
-        </h1>
-
-        <p className="mb-14 max-w-xl text-base leading-relaxed text-muted-foreground">
-          SmartLeads parses incoming form submissions, scores intent against budget and
-          urgency, and fires a qualified reply — automatically, in under ten seconds.
-        </p>
-
-        <div className="mb-16 overflow-hidden rounded-md border border-border bg-card/40">
-          {PIPELINE.map(s => (
-            <div key={s.idx} className="flex gap-4 border-b border-border px-5 py-4 last:border-b-0">
-              <span className="w-6 shrink-0 pt-0.5 font-mono text-xs text-muted-foreground/60">
-                {s.idx}
-              </span>
-              <div>
-                <div className="mb-1 font-mono text-sm text-accent">{s.title}</div>
-                <div className="text-sm leading-relaxed text-muted-foreground">{s.desc}</div>
-              </div>
-            </div>
-          ))}
+        {/* Radial glow behind text */}
+        <div
+          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+          aria-hidden
+        >
+          <div
+            className="h-96 w-96 rounded-full opacity-20 blur-3xl"
+            style={{ background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)' }}
+          />
         </div>
 
-        <Card className="overflow-hidden">
+        <div className="relative z-10 mx-auto max-w-2xl text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: 'easeOut' }}
+          >
+            <Badge className="mb-6 gap-2">
+              <Bot className="h-3 w-3" />
+              AI lead-qualification engine · v2
+            </Badge>
+
+            <h1 className="mb-5 font-display text-4xl font-bold leading-[1.07] tracking-tight sm:text-5xl lg:text-[3.5rem]">
+              Score every inquiry
+              <br />
+              <span
+                style={{
+                  background: 'linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #c4b5fd 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                before it goes cold.
+              </span>
+            </h1>
+
+            <p className="mx-auto max-w-md text-base leading-relaxed text-muted-foreground">
+              SmartLeads parses incoming project inquiries, scores intent
+              against budget and urgency, and fires a qualified reply —
+              automatically, in under ten seconds.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.55, duration: 0.4 }}
+            className="mt-8"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+              className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-accent"
+            >
+              try the live demo
+              <span className="animate-bounce">↓</span>
+            </button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Pipeline ────────────────────────────────────────── */}
+      <section className="mx-auto max-w-4xl px-6 pb-12">
+        <div className="grid grid-cols-1 gap-px rounded-xl border border-border bg-border sm:grid-cols-4">
+          {PIPELINE.map((step, i) => (
+            <motion.div
+              key={step.idx}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ delay: i * 0.08, duration: 0.4 }}
+              className="flex flex-col gap-2.5 bg-background p-5 first:rounded-tl-xl first:rounded-bl-xl last:rounded-tr-xl last:rounded-br-xl sm:first:rounded-l-xl sm:last:rounded-r-xl"
+            >
+              <span className="font-mono text-xs font-semibold text-accent/60">
+                {step.idx}
+              </span>
+              <span className="font-mono text-sm font-bold text-foreground">
+                {step.title}
+              </span>
+              <span className="text-xs leading-relaxed text-muted-foreground">
+                {step.desc}
+              </span>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Form ────────────────────────────────────────────── */}
+      <section ref={formRef} className="mx-auto max-w-lg scroll-mt-20 px-6 pb-28 pt-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.5 }}
+          className="overflow-hidden rounded-xl border border-border bg-card"
+        >
+          {/* Code-editor chrome bar */}
           <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-2.5">
-            <span className="font-mono text-xs text-muted-foreground/60">live_demo.tsx</span>
-            <span className="flex gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-white/15" />
-              <span className="h-2 w-2 rounded-full bg-white/15" />
-              <span className="h-2 w-2 rounded-full bg-white/15" />
+            <span className="font-mono text-xs text-muted-foreground/40">
+              live_demo.tsx
             </span>
+            <div className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-border" />
+              <span className="h-2.5 w-2.5 rounded-full bg-border" />
+              <span className="h-2.5 w-2.5 rounded-full bg-accent/30" />
+            </div>
           </div>
 
-          <CardHeader className="pt-6">
-            <CardDescription>
-              Submit a real inquiry below — the engine scores it live and shows its reasoning.
-            </CardDescription>
-          </CardHeader>
+          <div className="p-6">
+            <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
+              Submit a real inquiry — the engine scores it live and shows its
+              reasoning below.
+            </p>
 
-          <CardContent>
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              {FIELDS.map(f => (
-                <div key={f.name} className="flex flex-col gap-1.5">
-                  <Label htmlFor={f.name}>{f.label}</Label>
-                  <Input
-                    id={f.name}
-                    name={f.name}
-                    type={f.type}
-                    placeholder={f.placeholder}
-                    value={form[f.name]}
-                    onChange={set}
-                    autoComplete="off"
-                  />
-                </div>
-              ))}
+            {/* Fields grid */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="businessType">business_type</Label>
-                <Select id="businessType" name="businessType" value={form.businessType} onChange={set}>
+              {/* Name */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="name">Full name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="Jane Okafor"
+                  value={form.name}
+                  onChange={set}
+                  autoComplete="off"
+                />
+              </div>
+
+              {/* Email */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="email">Email address</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="jane@company.com"
+                  value={form.email}
+                  onChange={set}
+                  autoComplete="off"
+                />
+              </div>
+
+              {/* Business type */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="businessType">Business type</Label>
+                <Select
+                  id="businessType"
+                  name="businessType"
+                  value={form.businessType}
+                  onChange={set}
+                >
                   <option value="">— select —</option>
                   <option>E-commerce Store</option>
                   <option>SaaS / Software</option>
@@ -179,9 +303,15 @@ export default function Home() {
                 </Select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="budget">budget_range</Label>
-                <Select id="budget" name="budget" value={form.budget} onChange={set}>
+              {/* Budget */}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="budget">Budget range</Label>
+                <Select
+                  id="budget"
+                  name="budget"
+                  value={form.budget}
+                  onChange={set}
+                >
                   <option value="">— select —</option>
                   <option>Under $100</option>
                   <option>$100 – $500</option>
@@ -191,64 +321,122 @@ export default function Home() {
                 </Select>
               </div>
 
-              <div className="col-span-full flex flex-col gap-1.5">
-                <Label htmlFor="message">project_description</Label>
+              {/* Project description */}
+              <div className="col-span-full flex flex-col gap-2">
+                <Label htmlFor="message">Project description</Label>
                 <Textarea
                   id="message"
                   name="message"
-                  placeholder="What are you trying to build?"
+                  placeholder="Describe what you're trying to build or solve…"
                   value={form.message}
                   onChange={set}
                   rows={3}
                 />
+                <p className="text-xs text-muted-foreground/50">
+                  More detail → more accurate score.
+                </p>
               </div>
             </div>
-          </CardContent>
 
-          <CardFooter className="flex flex-col gap-4">
-            <Button
-              onClick={submit}
-              disabled={state.status === 'sending' || !form.name || !form.email}
-              size="lg"
-              className="w-full"
-            >
-              {state.status === 'sending' ? 'scoring…' : 'run qualification →'}
-            </Button>
-
-            {state.status === 'sent' && (
-              <div
-                role="status"
-                className="w-full rounded-md border border-border border-l-2 border-l-accent bg-muted/30 px-4 py-3 font-mono"
+            {/* Submit + result */}
+            <div className="mt-5 flex flex-col gap-3">
+              <Button
+                type="button"
+                size="lg"
+                className="w-full"
+                disabled={!canSubmit}
+                onClick={submit}
               >
-                <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <span className="text-muted-foreground">LEAD_SCORE</span>
-                  <span className="font-semibold text-foreground">{state.result.score}/100</span>
-                  <Badge variant={tagVariant}>{state.result.label}</Badge>
-                </div>
-                <div className="mt-1.5 text-xs text-muted-foreground">
-                  // {state.result.reason}
-                </div>
-              </div>
-            )}
+                {state.status === 'sending' ? (
+                  <>
+                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Qualifying…
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4" />
+                    Run qualification
+                  </>
+                )}
+              </Button>
 
-            {state.status === 'error' && (
-              <div
-                role="status"
-                className="w-full rounded-md border border-border border-l-2 border-l-destructive bg-muted/30 px-4 py-3 font-mono"
-              >
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="text-destructive">●</span>
-                  <span className="text-foreground">inquiry.failed</span>
-                </div>
-                <div className="mt-1.5 text-xs text-muted-foreground">// {state.message}</div>
-              </div>
-            )}
+              {/* Animated result / error */}
+              <AnimatePresence mode="wait">
+                {state.status === 'sent' && (
+                  <motion.div
+                    key="result"
+                    initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0,  scale: 1 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.32, ease: 'easeOut' }}
+                    role="status"
+                    style={{
+                      background: SCORE_THEME[state.result.label].bg,
+                      border: `1px solid ${SCORE_THEME[state.result.label].border}`,
+                    }}
+                    className="rounded-lg px-4 py-3.5"
+                  >
+                    {/* Header row */}
+                    <div className="flex items-center justify-between gap-3 font-mono text-sm">
+                      <span className="text-muted-foreground">LEAD_SCORE</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-foreground">
+                          {state.result.score}
+                          <span className="text-xs font-normal text-muted-foreground">
+                            /100
+                          </span>
+                        </span>
+                        <Badge variant={BADGE_VARIANT[state.result.label]}>
+                          {state.result.label}
+                        </Badge>
+                      </div>
+                    </div>
 
-            <p className="w-full text-center text-xs text-muted-foreground/60">
-              no spam · no sales calls · reply hits your inbox directly
-            </p>
-          </CardFooter>
-        </Card>
+                    {/* Animated score bar */}
+                    <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-border">
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: SCORE_THEME[state.result.label].bar }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${state.result.score}%` }}
+                        transition={{ duration: 1.1, ease: 'easeOut', delay: 0.12 }}
+                      />
+                    </div>
+
+                    {/* Reason */}
+                    <p className="mt-2.5 font-mono text-xs leading-relaxed text-muted-foreground">
+                      <span className="text-muted-foreground/40">// </span>
+                      {state.result.reason}
+                    </p>
+                  </motion.div>
+                )}
+
+                {state.status === 'error' && (
+                  <motion.div
+                    key="error"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    role="alert"
+                    className="rounded-lg border border-destructive/25 bg-destructive/8 px-4 py-3"
+                  >
+                    <div className="flex items-center gap-2 font-mono text-sm text-destructive">
+                      <span className="text-xs">●</span>
+                      inquiry.failed
+                    </div>
+                    <p className="mt-1 font-mono text-xs text-muted-foreground">
+                      // {state.message}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <p className="text-center font-mono text-[10px] text-muted-foreground/30">
+                no spam · no sales calls · automated reply only
+              </p>
+            </div>
+          </div>
+        </motion.div>
       </section>
     </main>
   );

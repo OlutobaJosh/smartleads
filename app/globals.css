@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #383838;
-  --foreground: #ededed;
-  --card: #474747;
-  --card-foreground: #ededed;
-  --primary: #f5a623;
-  --primary-foreground: #1f1f1f;
-  --secondary: #4a4a4a;
-  --secondary-foreground: #d8d8d8;
-  --muted: #404040;
-  --muted-foreground: #a8a8a8;
-  --accent: #f5a623;
-  --accent-foreground: #1f1f1f;
-  --destructive: #e08080;
+  --background: #06060e;
+  --foreground: #ededf7;
+  --card: #0d0d1e;
+  --card-foreground: #ededf7;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  --secondary: #141428;
+  --secondary-foreground: #a0a0c0;
+  --muted: #111124;
+  --muted-foreground: #6a6a8a;
+  --accent: #8b5cf6;
+  --accent-foreground: #ffffff;
+  --destructive: #f87171;
   --destructive-foreground: #1f1f1f;
-  --border: rgba(255, 255, 255, 0.12);
-  --input: rgba(255, 255, 255, 0.05);
-  --input-focus: rgba(255, 255, 255, 0.08);
-  --ring: rgba(245, 166, 35, 0.4);
+  --border: rgba(139, 92, 246, 0.14);
+  --input: rgba(139, 92, 246, 0.05);
+  --input-focus: rgba(139, 92, 246, 0.09);
+  --ring: rgba(139, 92, 246, 0.38);
 }
 
 @theme inline {
@@ -50,3 +50,9 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Subtle scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.35); }

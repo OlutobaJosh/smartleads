@@ -1,5 +1,4 @@
 import * as React from 'react';
-
 import { cn } from '@/lib/utils';
 
 function Label({ className, ...props }: React.ComponentProps<'label'>) {
@@ -7,7 +6,7 @@ function Label({ className, ...props }: React.ComponentProps<'label'>) {
     <label
       data-slot="label"
       className={cn(
-        'font-mono text-xs text-muted-foreground tracking-wide select-none',
+        'inline-flex items-center gap-1.5 text-sm font-medium text-foreground/80 select-none leading-none',
         className
       )}
       {...props}
