@@ -51,7 +51,7 @@ Project description: ${inquiry.message || 'Not specified'}`;
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.3,
-      max_completion_tokens: 200,
+      max_completion_tokens: 400,
       response_format: { type: 'json_object' },
     }),
   });
