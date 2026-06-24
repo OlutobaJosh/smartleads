@@ -78,6 +78,8 @@ Project description: ${inquiry.message || 'Not specified'}`;
   };
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { name, email, businessType, budget, message } = body as Inquiry;
@@ -85,6 +87,13 @@ export async function POST(req: NextRequest) {
   if (!name || !email) {
     return NextResponse.json(
       { error: 'name and email are required' },
+      { status: 400 }
+    );
+  }
+
+  if (!EMAIL_RE.test(email.trim())) {
+    return NextResponse.json(
+      { error: 'A valid email address is required' },
       { status: 400 }
     );
   }
