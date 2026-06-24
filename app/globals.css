@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #06060e;
-  --foreground: #ededf7;
-  --card: #0d0d1e;
-  --card-foreground: #ededf7;
-  --primary: #8b5cf6;
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --primary: #7c3aed;
   --primary-foreground: #ffffff;
-  --secondary: #141428;
-  --secondary-foreground: #a0a0c0;
-  --muted: #111124;
-  --muted-foreground: #6a6a8a;
-  --accent: #8b5cf6;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #09090b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #7c3aed;
   --accent-foreground: #ffffff;
-  --destructive: #f87171;
-  --destructive-foreground: #1f1f1f;
-  --border: rgba(139, 92, 246, 0.14);
-  --input: rgba(139, 92, 246, 0.05);
-  --input-focus: rgba(139, 92, 246, 0.09);
-  --ring: rgba(139, 92, 246, 0.38);
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: rgba(0, 0, 0, 0.04);
+  --input-focus: rgba(124, 58, 237, 0.06);
+  --ring: rgba(124, 58, 237, 0.35);
 }
 
 @theme inline {
@@ -51,8 +51,8 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Subtle scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* Scrollbar — subtle on white */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.2); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.35); }
+::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.22); }
