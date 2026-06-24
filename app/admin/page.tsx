@@ -2,9 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 import { ArrowLeft, TrendingUp, Flame, Percent, Send } from 'lucide-react';
 import { SignOutButton } from './_components/sign-out-button';
 
+// Falls back to anon key if SUPABASE_SERVICE_KEY is not set on Render.
+// Add SUPABASE_SERVICE_KEY in Render → Environment for full RLS bypass.
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_KEY ??
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  '';
+
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+  supabaseKey
 );
 
 type Lead = {
@@ -58,20 +65,13 @@ export default async function AdminPage() {
 
       {/* Nav */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px', borderBottom: '1px solid rgba(139,92,246,0.14)', background: 'rgba(6,6,14,0.88)', backdropFilter: 'blur(14px)' }}>
-        <a
-          href="/"
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.72rem', color: '#6a6a8a', textDecoration: 'none' }}
-        >
-          <ArrowLeft style={{ width: 12, height: 12 }} />
-          back to app
+        <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.72rem', color: '#6a6a8a', textDecoration: 'none' }}>
+          <ArrowLeft style={{ width: 12, height: 12 }} /> back to app
         </a>
-
         <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.82rem', fontWeight: 700, color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#8b5cf6', display: 'inline-block' }} />
           SmartLeads · Admin
         </span>
-
-        {/* Sign out is a client component — onClick can't live in a Server Component */}
         <SignOutButton />
       </nav>
 
@@ -93,7 +93,14 @@ export default async function AdminPage() {
           })}
         </div>
 
-        {/* Error notice */}
+        {/* Key warning — shown only when service key is missing */}
+        {!process.env.SUPABASE_SERVICE_KEY && (
+          <div style={{ border: '1px solid rgba(245,158,11,0.25)', background: 'rgba(245,158,11,0.06)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.72rem', color: '#fbbf24' }}>
+            // warning: SUPABASE_SERVICE_KEY not set — using anon key. Add it in Render → Environment for full access.
+          </div>
+        )}
+
+        {/* DB error */}
         {error && (
           <div style={{ border: '1px solid rgba(248,113,113,0.25)', background: 'rgba(248,113,113,0.07)', borderRadius: 10, padding: '12px 16px', marginBottom: 24, fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.75rem', color: '#f87171' }}>
             // db error: {error.message}
@@ -116,67 +123,56 @@ export default async function AdminPage() {
                   ))}
                 </tr>
               </thead>
-
               <tbody>
                 {leads.length === 0 ? (
                   <tr>
                     <td colSpan={8} style={{ padding: '60px 24px', textAlign: 'center', fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.75rem', color: '#3a3a5a' }}>
-                      No leads yet. Submit an inquiry on the homepage to test the pipeline.
+                      {error ? 'Could not load leads — check the error above.' : 'No leads yet. Submit an inquiry on the homepage to test the pipeline.'}
                     </td>
                   </tr>
-                ) : (
-                  leads.map((lead, i) => {
-                    const ps = P_STYLE[lead.priority] ?? P_STYLE.COLD;
-                    return (
-                      <tr key={lead.id} style={{ borderBottom: i < leads.length - 1 ? '1px solid rgba(139,92,246,0.06)' : 'none' }}>
-
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.83rem' }}>{lead.name}</div>
-                          <div style={{ fontSize: '0.68rem', color: '#3a3a5a', marginTop: 2 }}>{lead.email}</div>
-                        </td>
-
-                        <td style={{ padding: '14px 16px', fontSize: '0.78rem', color: '#6a6a8a' }}>{lead.business_type || '—'}</td>
-
-                        <td style={{ padding: '14px 16px', fontSize: '0.78rem', color: '#6a6a8a', whiteSpace: 'nowrap' as const }}>{lead.budget || '—'}</td>
-
-                        <td style={{ padding: '14px 16px' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 100, fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.62rem', fontWeight: 700, background: ps.bg, color: ps.text }}>
-                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: ps.dot, display: 'inline-block' }} />
-                            {lead.priority ?? 'COLD'}
-                          </span>
-                        </td>
-
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
-                            <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '1rem', fontWeight: 800, color: ps.text }}>{lead.ai_score ?? '—'}</span>
-                            <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.62rem', color: '#3a3a5a' }}>/100</span>
+                ) : leads.map((lead, i) => {
+                  const ps = P_STYLE[lead.priority] ?? P_STYLE.COLD;
+                  return (
+                    <tr key={lead.id} style={{ borderBottom: i < leads.length - 1 ? '1px solid rgba(139,92,246,0.06)' : 'none' }}>
+                      <td style={{ padding: '14px 16px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.83rem' }}>{lead.name}</div>
+                        <div style={{ fontSize: '0.68rem', color: '#3a3a5a', marginTop: 2 }}>{lead.email}</div>
+                      </td>
+                      <td style={{ padding: '14px 16px', fontSize: '0.78rem', color: '#6a6a8a' }}>{lead.business_type || '—'}</td>
+                      <td style={{ padding: '14px 16px', fontSize: '0.78rem', color: '#6a6a8a', whiteSpace: 'nowrap' as const }}>{lead.budget || '—'}</td>
+                      <td style={{ padding: '14px 16px' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 100, fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.62rem', fontWeight: 700, background: ps.bg, color: ps.text }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ps.dot, display: 'inline-block' }} />
+                          {lead.priority ?? 'COLD'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                          <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '1rem', fontWeight: 800, color: ps.text }}>{lead.ai_score ?? '—'}</span>
+                          <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.62rem', color: '#3a3a5a' }}>/100</span>
+                        </div>
+                        {lead.ai_score != null && (
+                          <div style={{ marginTop: 4, height: 2, width: 60, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${lead.ai_score}%`, background: ps.dot, borderRadius: 2 }} />
                           </div>
-                          {lead.ai_score != null && (
-                            <div style={{ marginTop: 4, height: 2, width: 60, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${lead.ai_score}%`, background: ps.dot, borderRadius: 2 }} />
-                            </div>
-                          )}
-                        </td>
-
-                        <td style={{ padding: '14px 16px', fontSize: '0.73rem', color: '#6a6a8a', maxWidth: 220, lineHeight: 1.5 }}>
-                          <div style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
-                            {lead.ai_summary || '—'}
-                          </div>
-                        </td>
-
-                        <td style={{ padding: '14px 16px' }}>
-                          <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.62rem', color: lead.ai_email_sent === 'true' ? '#10b981' : '#3a3a5a' }}>
-                            {lead.ai_email_sent === 'true' ? '✓ sent' : '—'}
-                          </span>
-                        </td>
-
-                        <td style={{ padding: '14px 16px', fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.65rem', color: '#3a3a5a', whiteSpace: 'nowrap' as const }}>
-                          {fmt(lead.created_at)}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
+                        )}
+                      </td>
+                      <td style={{ padding: '14px 16px', fontSize: '0.73rem', color: '#6a6a8a', maxWidth: 220, lineHeight: 1.5 }}>
+                        <div style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
+                          {lead.ai_summary || '—'}
+                        </div>
+                      </td>
+                      <td style={{ padding: '14px 16px' }}>
+                        <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.62rem', color: lead.ai_email_sent === 'true' ? '#10b981' : '#3a3a5a' }}>
+                          {lead.ai_email_sent === 'true' ? '✓ sent' : '—'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 16px', fontFamily: 'var(--font-geist-mono, monospace)', fontSize: '0.65rem', color: '#3a3a5a', whiteSpace: 'nowrap' as const }}>
+                        {fmt(lead.created_at)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

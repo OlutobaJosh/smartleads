@@ -1,18 +1,18 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Zap, Bot } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { BackgroundPaths } from '@/components/ui/background-paths';
+import { Button }           from '@/components/ui/button';
+import { Badge }            from '@/components/ui/badge';
+import { Input }            from '@/components/ui/input';
+import { Textarea }         from '@/components/ui/textarea';
+import { Label }            from '@/components/ui/label';
+import { WovenHeroSection } from '@/components/ui/woven-hero';
+import { CustomSelect }     from '@/components/ui/custom-select';
 
-/* ─── Types ─────────────────────────────────────────────────── */
+/* ─── Types ──────────────────────────────────────────────────── */
 type ScoreLabel = 'HOT' | 'WARM' | 'COLD';
 type ScoreResult = { score: number; label: ScoreLabel; reason: string };
 type SubmitState =
@@ -39,7 +39,24 @@ const BADGE_VARIANT: Record<ScoreLabel, 'hot' | 'warm' | 'cold'> = {
   HOT: 'hot', WARM: 'warm', COLD: 'cold',
 };
 
-/* ─── Component ──────────────────────────────────────────────── */
+const BUSINESS_OPTIONS = [
+  { label: 'E-commerce Store',      value: 'E-commerce Store'      },
+  { label: 'SaaS / Software',       value: 'SaaS / Software'       },
+  { label: 'Agency / Consultancy',  value: 'Agency / Consultancy'  },
+  { label: 'Real Estate',           value: 'Real Estate'           },
+  { label: 'Healthcare',            value: 'Healthcare'            },
+  { label: 'Other',                 value: 'Other'                 },
+];
+
+const BUDGET_OPTIONS = [
+  { label: 'Under $100',        value: 'Under $100'        },
+  { label: '$100 – $500',       value: '$100 – $500'       },
+  { label: '$500 – $1,000',     value: '$500 – $1,000'     },
+  { label: '$1,000 – $5,000',   value: '$1,000 – $5,000'   },
+  { label: '$5,000+',           value: '$5,000+'           },
+];
+
+/* ─── Page ───────────────────────────────────────────────────── */
 export default function Home() {
   const formRef = useRef<HTMLElement>(null);
 
@@ -48,25 +65,28 @@ export default function Home() {
   });
   const [state, setState] = useState<SubmitState>({ status: 'idle' });
 
-  /* Warm the server silently as soon as the page loads.
-     Render free tier spins down after inactivity — pinging /api/health
-     gives it ~30-60s head-start before the user hits Submit. */
+  /* Warm Render server on page load */
   useEffect(() => {
     fetch('/api/health').catch(() => {});
   }, []);
 
+  /* Handler for text/textarea inputs */
   function set(
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   }
 
-  /* Auto-retry once on failure (handles Render cold-start).
-     The retry is silent — the user just sees "Qualifying…" the whole time. */
+  /* Handler for CustomSelect (receives value string directly) */
+  function setField(field: 'businessType' | 'budget', value: string) {
+    setForm(f => ({ ...f, [field]: value }));
+  }
+
+  /* Submit with silent auto-retry for Render cold starts */
   async function submit() {
     setState({ status: 'sending' });
 
-    const attempt = async () =>
+    const attempt = () =>
       fetch('/api/inquiry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,12 +99,10 @@ export default function Home() {
     try {
       res = await attempt();
     } catch {
-      // First attempt failed (cold start timeout) — wait then retry once
       await new Promise(r => setTimeout(r, 1800));
-      try {
-        res = await attempt();
-      } catch {
-        setState({ status: 'error', message: 'Server is taking too long. Please try again in a moment.' });
+      try { res = await attempt(); }
+      catch {
+        setState({ status: 'error', message: 'Server is warming up — please try again.' });
         return;
       }
     }
@@ -92,26 +110,18 @@ export default function Home() {
     const data = await res.json().catch(() => null);
 
     if (!res.ok || !data?.success) {
-      // If first attempt returned an error response, silently retry once
       if (res.status >= 500) {
         await new Promise(r => setTimeout(r, 1800));
         try {
-          res = await attempt();
-          const retryData = await res.json().catch(() => null);
-          if (res.ok && retryData?.success) {
-            setState({
-              status: 'sent',
-              result: { score: retryData.score, label: retryData.label, reason: retryData.reason },
-            });
+          const r2 = await attempt();
+          const d2 = await r2.json().catch(() => null);
+          if (r2.ok && d2?.success) {
+            setState({ status: 'sent', result: { score: d2.score, label: d2.label, reason: d2.reason } });
             return;
           }
-        } catch { /* fall through to error */ }
+        } catch { /* fall through */ }
       }
-
-      setState({
-        status: 'error',
-        message: data?.error ?? 'Something went wrong. Please try again.',
-      });
+      setState({ status: 'error', message: data?.error ?? 'Something went wrong. Please try again.' });
       return;
     }
 
@@ -128,7 +138,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground">
 
-      {/* ── Nav ────────────────────────────────────────────────── */}
+      {/* ── Nav ──────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 backdrop-blur-md sm:px-8">
         <span className="flex items-center gap-2.5 font-mono text-sm font-bold tracking-tight">
           <span className="relative flex h-2 w-2">
@@ -137,71 +147,20 @@ export default function Home() {
           </span>
           SmartLeads
         </span>
-        {/* Stack label — shows what it's built with, no admin link visible */}
         <span className="hidden items-center gap-1.5 font-mono text-[10px] text-muted-foreground/40 sm:flex">
           Next.js · Groq · Supabase · Make.com
         </span>
       </nav>
 
-      {/* ── Hero ───────────────────────────────────────────────── */}
-      <section className="relative flex min-h-[56vh] items-center justify-center overflow-hidden px-6 pb-16 pt-20">
-        <BackgroundPaths />
+      {/* ── Hero (Three.js woven particle system) ────────────── */}
+      <WovenHeroSection
+        onScrollToForm={() =>
+          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      />
 
-        {/* Radial glow */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
-          <div
-            className="h-96 w-96 rounded-full opacity-[0.18] blur-3xl"
-            style={{ background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)' }}
-          />
-        </div>
-
-        <div className="relative z-10 mx-auto max-w-2xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: 'easeOut' }}
-          >
-            <Badge className="mb-6 gap-2">
-              <Bot className="h-3 w-3" />
-              AI-powered lead qualification
-            </Badge>
-
-            <h1 className="mb-5 font-display text-4xl font-bold leading-[1.07] tracking-tight sm:text-5xl lg:text-[3.5rem]">
-              Every inquiry scored
-              <br />
-              <span
-                style={{
-                  background: 'linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #c4b5fd 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                in under ten seconds.
-              </span>
-            </h1>
-
-            <p className="mx-auto max-w-md text-base leading-relaxed text-muted-foreground">
-              SmartLeads reads an incoming project inquiry, scores the lead
-              against intent, budget, and urgency, then fires the right
-              automated reply — no human in the loop.
-            </p>
-          </motion.div>
-
-          <motion.button
-            type="button"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.55, duration: 0.4 }}
-            onClick={() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="mt-8 inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-accent"
-          >
-            see it live <span className="animate-bounce">↓</span>
-          </motion.button>
-        </div>
-      </section>
-
-      {/* ── Pipeline ───────────────────────────────────────────── */}
-      <section className="mx-auto max-w-4xl px-6 pb-12">
+      {/* ── Pipeline ─────────────────────────────────────────── */}
+      <section className="mx-auto max-w-4xl px-6 py-12">
         <div className="grid grid-cols-1 gap-px rounded-xl border border-border bg-border sm:grid-cols-4">
           {PIPELINE.map((step, i) => (
             <motion.div
@@ -211,10 +170,8 @@ export default function Home() {
               viewport={{ once: true, margin: '-40px' }}
               transition={{ delay: i * 0.08, duration: 0.4 }}
               className="flex flex-col gap-2.5 bg-background p-5
-                first:rounded-tl-xl first:rounded-bl-xl
-                last:rounded-tr-xl  last:rounded-br-xl
-                sm:first:rounded-l-xl sm:first:rounded-bl-xl
-                sm:last:rounded-r-xl  sm:last:rounded-br-xl"
+                first:rounded-tl-xl first:rounded-bl-xl last:rounded-tr-xl last:rounded-br-xl
+                sm:first:rounded-l-xl sm:last:rounded-r-xl"
             >
               <span className="font-mono text-xs font-semibold text-accent/60">{step.idx}</span>
               <span className="font-mono text-sm font-bold text-foreground">{step.title}</span>
@@ -224,8 +181,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Form ───────────────────────────────────────────────── */}
-      <section ref={formRef} className="mx-auto max-w-lg scroll-mt-20 px-6 pb-28 pt-4">
+      {/* ── Form ─────────────────────────────────────────────── */}
+      <section ref={formRef} className="mx-auto max-w-lg scroll-mt-20 px-6 pb-28 pt-2">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -233,7 +190,7 @@ export default function Home() {
           transition={{ duration: 0.5 }}
           className="overflow-hidden rounded-xl border border-border bg-card"
         >
-          {/* Code-editor chrome */}
+          {/* Editor chrome */}
           <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-2.5">
             <span className="font-mono text-xs text-muted-foreground/35">live_demo.tsx</span>
             <div className="flex items-center gap-1.5">
@@ -251,48 +208,59 @@ export default function Home() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
+              {/* Name */}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="name">Full name</Label>
-                <Input id="name" name="name" type="text"
-                  placeholder="Jane Okafor" value={form.name} onChange={set} autoComplete="off" />
+                <Input
+                  id="name" name="name" type="text"
+                  placeholder="Jane Okafor"
+                  value={form.name} onChange={set}
+                  autoComplete="off"
+                />
               </div>
 
+              {/* Email */}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="email">Email address</Label>
-                <Input id="email" name="email" type="email"
-                  placeholder="jane@company.com" value={form.email} onChange={set} autoComplete="off" />
+                <Input
+                  id="email" name="email" type="email"
+                  placeholder="jane@company.com"
+                  value={form.email} onChange={set}
+                  autoComplete="off"
+                />
               </div>
 
+              {/* Business type — CustomSelect (dark-styled dropdown) */}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="businessType">Business type</Label>
-                <Select id="businessType" name="businessType" value={form.businessType} onChange={set}>
-                  <option value="">— select —</option>
-                  <option>E-commerce Store</option>
-                  <option>SaaS / Software</option>
-                  <option>Agency / Consultancy</option>
-                  <option>Real Estate</option>
-                  <option>Healthcare</option>
-                  <option>Other</option>
-                </Select>
+                <CustomSelect
+                  id="businessType"
+                  value={form.businessType}
+                  onChange={val => setField('businessType', val)}
+                  options={BUSINESS_OPTIONS}
+                />
               </div>
 
+              {/* Budget — CustomSelect */}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="budget">Budget range</Label>
-                <Select id="budget" name="budget" value={form.budget} onChange={set}>
-                  <option value="">— select —</option>
-                  <option>Under $100</option>
-                  <option>$100 – $500</option>
-                  <option>$500 – $1,000</option>
-                  <option>$1,000 – $5,000</option>
-                  <option>$5,000+</option>
-                </Select>
+                <CustomSelect
+                  id="budget"
+                  value={form.budget}
+                  onChange={val => setField('budget', val)}
+                  options={BUDGET_OPTIONS}
+                />
               </div>
 
+              {/* Message */}
               <div className="col-span-full flex flex-col gap-2">
                 <Label htmlFor="message">Project description</Label>
-                <Textarea id="message" name="message"
+                <Textarea
+                  id="message" name="message"
                   placeholder="Describe what you're trying to build or solve…"
-                  value={form.message} onChange={set} rows={3} />
+                  value={form.message} onChange={set}
+                  rows={3}
+                />
                 <p className="text-xs text-muted-foreground/45">
                   More detail → more accurate score.
                 </p>
@@ -301,8 +269,10 @@ export default function Home() {
 
             {/* Submit + result */}
             <div className="mt-5 flex flex-col gap-3">
-              <Button type="button" size="lg" className="w-full"
-                disabled={!canSubmit} onClick={submit}>
+              <Button
+                type="button" size="lg" className="w-full"
+                disabled={!canSubmit} onClick={submit}
+              >
                 {state.status === 'sending' ? (
                   <>
                     <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -317,17 +287,18 @@ export default function Home() {
               </Button>
 
               <AnimatePresence mode="wait">
+
                 {state.status === 'sent' && (
                   <motion.div
                     key="result"
                     initial={{ opacity: 0, y: 10, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0,  scale: 1 }}
+                    animate={{ opacity: 1, y: 0,  scale: 1   }}
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.32, ease: 'easeOut' }}
                     role="status"
                     style={{
                       background: SCORE_THEME[state.result.label].bg,
-                      border: `1px solid ${SCORE_THEME[state.result.label].border}`,
+                      border:     `1px solid ${SCORE_THEME[state.result.label].border}`,
                     }}
                     className="rounded-lg px-4 py-3.5"
                   >
@@ -344,7 +315,6 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* Animated score bar */}
                     <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-border">
                       <motion.div
                         className="h-full rounded-full"
@@ -379,6 +349,7 @@ export default function Home() {
                     </p>
                   </motion.div>
                 )}
+
               </AnimatePresence>
 
               <p className="text-center font-mono text-[10px] text-muted-foreground/30">
@@ -389,7 +360,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* ── Footer ─────────────────────────────────────────────── */}
+      {/* ── Footer ───────────────────────────────────────────── */}
       <footer className="border-t border-border py-8 text-center">
         <p className="font-mono text-[10px] text-muted-foreground/30">
           Built with Next.js · TypeScript · Supabase · Groq AI · Make.com
