@@ -64,6 +64,7 @@ export default function Home() {
     name: '', email: '', businessType: '', budget: '', message: '',
   });
   const [state, setState] = useState<SubmitState>({ status: 'idle' });
+  const [emailError, setEmailError] = useState(false);
 
   /* Warm Render server on page load */
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function Home() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    if (e.target.name === 'email') setEmailError(false);
   }
 
   /* Handler for CustomSelect (receives value string directly) */
@@ -84,7 +86,12 @@ export default function Home() {
 
   /* Submit with silent auto-retry for Render cold starts */
   async function submit() {
-    setState({ status: 'sending' });
+  if (!isEmailValid) {
+    setEmailError(true);
+    return;
+  }
+
+  setState({ status: 'sending' });
 
     const attempt = () =>
       fetch('/api/inquiry', {
@@ -131,9 +138,13 @@ export default function Home() {
     });
   }
 
-  const canSubmit = state.status !== 'sending'
-    && form.name.trim() !== ''
-    && form.email.trim() !== '';
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const isEmailValid = EMAIL_RE.test(form.email.trim());
+
+const canSubmit = state.status !== 'sending'
+  && form.name.trim() !== ''
+  && form.email.trim() !== ''
+  && isEmailValid;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -227,8 +238,14 @@ export default function Home() {
                   placeholder="jane@company.com"
                   value={form.email} onChange={set}
                   autoComplete="off"
-                />
-              </div>
+                  required
+                  pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+                  aria-invalid={emailError ? "true" : "false"}
+               />
+               {emailError && (
+                  <p className="text-sm text-red-500">Please enter a valid email address.</p>
+              )}
+            </div>
 
               {/* Business type — CustomSelect (dark-styled dropdown) */}
               <div className="flex flex-col gap-2">
