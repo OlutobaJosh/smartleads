@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Zap, Inbox, Cpu, Tag, Send, ArrowRight, Github, Linkedin } from 'lucide-react';
+import { Zap, Inbox, Cpu, Tag, Send, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 
@@ -25,10 +25,10 @@ type SubmitState =
 
 /* ─── Constants ──────────────────────────────────────────────── */
 const PIPELINE: { idx: string; title: string; desc: string; Icon: LucideIcon }[] = [
-  { idx: '01', title: 'Receive',  desc: 'Inquiry hits the API and is parsed for key signals.',          Icon: Inbox },
-  { idx: '02', title: 'Qualify',  desc: 'Groq AI scores intent, budget fit, and urgency 0–100.',       Icon: Cpu   },
-  { idx: '03', title: 'Classify', desc: 'Lead tagged HOT / WARM / COLD and stored in Supabase.',       Icon: Tag   },
-  { idx: '04', title: 'Dispatch', desc: 'Make.com fires the right automated reply via Gmail.',         Icon: Send  },
+  { idx: '01', title: 'Receive',  desc: 'Inquiry hits the API and is parsed for key signals.',    Icon: Inbox },
+  { idx: '02', title: 'Qualify',  desc: 'Groq AI scores intent, budget fit, and urgency 0–100.', Icon: Cpu   },
+  { idx: '03', title: 'Classify', desc: 'Lead tagged HOT / WARM / COLD, stored in Supabase.',    Icon: Tag   },
+  { idx: '04', title: 'Dispatch', desc: 'Make.com fires the right automated reply via Gmail.',    Icon: Send  },
 ];
 
 const SCORE_THEME: Record<ScoreLabel, { bar: string; bg: string; border: string }> = {
@@ -58,6 +58,14 @@ const BUDGET_OPTIONS = [
   { label: '$5,000+',         value: '$5,000+'         },
 ];
 
+/* ─── Social links ───────────────────────────────────────────── */
+const SOCIALS = [
+  { label: 'Upwork',    href: 'https://www.upwork.com/freelancers/~01119b32ca7911f5c3?mp_source=share' },
+  { label: 'GitHub',    href: 'https://github.com/olutobajosh'                                         },
+  { label: 'LinkedIn',  href: 'https://linkedin.com/in/joshuaasiribo'                                  },
+  { label: 'Portfolio', href: 'https://joshua-asiribo.vercel.app/'                                     },
+];
+
 /* ─── Page ───────────────────────────────────────────────────── */
 export default function Home() {
   const formRef = useRef<HTMLElement>(null);
@@ -72,7 +80,6 @@ export default function Home() {
   function set(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   }
-
   function setField(field: 'businessType' | 'budget', value: string) {
     setForm(f => ({ ...f, [field]: value }));
   }
@@ -140,8 +147,8 @@ export default function Home() {
         onScrollToForm={() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
       />
 
-      {/* ── Pipeline — redesigned with icons + hover effects ── */}
-      <section className="bg-white px-6 pb-20 pt-16">
+      {/* ── Pipeline ─────────────────────────────────────────── */}
+      <section className="bg-white px-6 pb-24 pt-20">
         <div className="mx-auto max-w-5xl">
 
           {/* Section label */}
@@ -150,9 +157,9 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4 }}
-            className="mb-12 text-center"
+            className="mb-14 text-center"
           >
-            <p className="mb-3 font-mono text-xs uppercase tracking-widest text-zinc-400">
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400">
               How it works
             </p>
             <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
@@ -160,55 +167,117 @@ export default function Home() {
             </h2>
           </motion.div>
 
-          {/* Cards */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {PIPELINE.map((step, i) => (
+          {/* Cards + connecting line wrapper */}
+          <div className="relative">
+
+            {/* ── Animated connector line — desktop only ──────── */}
+            <motion.div
+              className="pointer-events-none absolute hidden h-px lg:block"
+              style={{
+                top: 44,          // vertically aligns with icon centre
+                left: '12.5%',    // centre of first card
+                right: '12.5%',   // centre of last card
+                background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.1) 15%, rgba(0,0,0,0.1) 85%, transparent)',
+              }}
+              initial={{ scaleX: 0, originX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.6, ease: 'easeOut', delay: 0.1 }}
+            />
+
+            {/* ── Pipeline node dots — desktop only ───────────── */}
+            {[0.125, 0.375, 0.625, 0.875].map((pos, i) => (
               <motion.div
-                key={step.idx}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-30px' }}
-                transition={{ delay: i * 0.1, duration: 0.5 }}
-                className="group relative overflow-hidden rounded-2xl border border-black/8 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/8 hover:border-black/15"
-              >
-                {/* Large ghost number — background element */}
-                <span
-                  className="pointer-events-none absolute -bottom-2 -right-1 select-none font-black leading-none text-black/[0.045] transition-all duration-300 group-hover:text-black/[0.08]"
-                  style={{ fontSize: '6rem' }}
-                >
-                  {step.idx}
-                </span>
-
-                {/* Icon container — fills black on hover */}
-                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl border border-black/8 bg-zinc-50 transition-all duration-300 group-hover:bg-zinc-900 group-hover:border-zinc-900 group-hover:shadow-md">
-                  <step.Icon className="h-4 w-4 text-zinc-500 transition-colors duration-300 group-hover:text-white" />
-                </div>
-
-                <h3 className="mb-2 font-mono text-sm font-bold text-zinc-900">{step.title}</h3>
-                <p className="text-[13px] leading-relaxed text-zinc-500">{step.desc}</p>
-
-                {/* Bottom accent line — sweeps in on hover */}
-                <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-zinc-900 transition-all duration-500 group-hover:w-full" />
-              </motion.div>
+                key={i}
+                className="pointer-events-none absolute hidden h-2 w-2 rounded-full border border-black/15 bg-white lg:block"
+                style={{
+                  top: 36,
+                  left: `${pos * 100}%`,
+                  transform: 'translateX(-50%)',
+                }}
+                initial={{ scale: 0 }}
+                whileInView={{ scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.18 + 0.6, type: 'spring', stiffness: 400, damping: 18 }}
+              />
             ))}
+
+            {/* ── Cards ───────────────────────────────────────── */}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {PIPELINE.map((step, i) => (
+                <motion.div
+                  key={step.idx}
+                  initial={{ opacity: 0, y: 28 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-20px' }}
+                  transition={{ delay: i * 0.12, duration: 0.5, ease: [0.21, 1.02, 0.73, 1] }}
+                  className="group relative overflow-hidden rounded-2xl border border-black/8 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-black/8 hover:border-black/12"
+                >
+                  {/* Ghost step number */}
+                  <span
+                    className="pointer-events-none absolute -bottom-2 -right-1 select-none font-black leading-none text-black/[0.045] transition-all duration-500 group-hover:text-black/[0.09]"
+                    style={{ fontSize: '6rem' }}
+                    aria-hidden
+                  >
+                    {step.idx}
+                  </span>
+
+                  {/* Icon with bounce entrance + ripple pulse */}
+                  <div className="relative mb-5 inline-flex">
+                    {/* Ripple ring — fires once on viewport entry */}
+                    <motion.div
+                      className="absolute inset-0 rounded-xl border border-black/20"
+                      initial={{ scale: 1, opacity: 0 }}
+                      whileInView={{
+                        scale: [1, 2.2, 3.2],
+                        opacity: [0.4, 0.15, 0],
+                      }}
+                      viewport={{ once: true }}
+                      transition={{
+                        delay: i * 0.22 + 0.7,
+                        duration: 0.9,
+                        ease: 'easeOut',
+                      }}
+                    />
+
+                    {/* Icon box */}
+                    <motion.div
+                      className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-black/8 bg-zinc-50 transition-all duration-300 group-hover:border-zinc-900 group-hover:bg-zinc-900 group-hover:shadow-md"
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{
+                        delay: i * 0.12 + 0.25,
+                        type: 'spring',
+                        stiffness: 320,
+                        damping: 14,
+                      }}
+                    >
+                      <step.Icon className="h-4 w-4 text-zinc-500 transition-colors duration-300 group-hover:text-white" />
+                    </motion.div>
+                  </div>
+
+                  <h3 className="mb-2 font-mono text-sm font-bold text-zinc-900">{step.title}</h3>
+                  <p className="text-[13px] leading-relaxed text-zinc-500">{step.desc}</p>
+
+                  {/* Bottom sweep line on hover */}
+                  <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-zinc-900 transition-all duration-500 group-hover:w-full" />
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Section divider — white to light gray ────────────── */}
+      {/* ── Divider ──────────────────────────────────────────── */}
       <div className="h-px bg-gradient-to-r from-transparent via-black/8 to-transparent" />
 
       {/* ── Form section ─────────────────────────────────────── */}
-      <section
-        ref={formRef}
-        className="relative scroll-mt-0 overflow-hidden bg-zinc-50 pb-28 pt-16"
-      >
+      <section ref={formRef} className="relative scroll-mt-0 overflow-hidden bg-zinc-50 pb-28 pt-16">
         <FloatingPaths position={1} />
         <FloatingPaths position={-1} />
 
         <div className="relative z-10 mx-auto max-w-lg px-6">
-
-          {/* Section intro */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -216,15 +285,10 @@ export default function Home() {
             transition={{ duration: 0.4 }}
             className="mb-8 text-center"
           >
-            <p className="mb-2 font-mono text-xs uppercase tracking-widest text-zinc-400">
-              Live demo
-            </p>
-            <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
-              Try it right now.
-            </h2>
+            <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400">Live demo</p>
+            <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Try it right now.</h2>
           </motion.div>
 
-          {/* Form card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -232,7 +296,6 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="overflow-hidden rounded-2xl border border-black/8 bg-white shadow-2xl shadow-black/6"
           >
-            {/* Editor chrome */}
             <div className="flex items-center justify-between border-b border-black/6 bg-zinc-50/80 px-4 py-2.5">
               <span className="font-mono text-xs text-zinc-400">live_demo.tsx</span>
               <div className="flex items-center gap-1.5">
@@ -244,36 +307,30 @@ export default function Home() {
 
             <div className="p-6">
               <p className="mb-6 text-sm leading-relaxed text-zinc-500">
-                Submit a real inquiry. The engine scores it live and shows its
-                reasoning below.
+                Submit a real inquiry. The engine scores it live and shows its reasoning below.
               </p>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="name">Full name</Label>
                   <Input id="name" name="name" type="text" placeholder="Jane Okafor"
                     value={form.name} onChange={set} autoComplete="off" />
                 </div>
-
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="email">Email address</Label>
                   <Input id="email" name="email" type="email" placeholder="jane@company.com"
                     value={form.email} onChange={set} autoComplete="off" />
                 </div>
-
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="businessType">Business type</Label>
                   <CustomSelect id="businessType" value={form.businessType}
                     onChange={val => setField('businessType', val)} options={BUSINESS_OPTIONS} />
                 </div>
-
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="budget">Budget range</Label>
                   <CustomSelect id="budget" value={form.budget}
                     onChange={val => setField('budget', val)} options={BUDGET_OPTIONS} />
                 </div>
-
                 <div className="col-span-full flex flex-col gap-2">
                   <Label htmlFor="message">Project description</Label>
                   <Textarea id="message" name="message"
@@ -281,7 +338,6 @@ export default function Home() {
                     value={form.message} onChange={set} rows={3} />
                   <p className="text-xs text-zinc-400">More detail → more accurate score.</p>
                 </div>
-
               </div>
 
               <div className="mt-5 flex flex-col gap-3">
@@ -330,7 +386,6 @@ export default function Home() {
                       </p>
                     </motion.div>
                   )}
-
                   {state.status === 'error' && (
                     <motion.div key="error"
                       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -353,106 +408,128 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Footer — black bookend matching the hero ──────────── */}
-      <footer className="bg-black text-white">
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+      {/* ── Footer — taped design (21st.dev style) ───────────── */}
+      <footer className="bg-white px-6 pb-0 pt-16">
+        <div className="mx-auto max-w-6xl">
 
-            {/* Brand */}
-            <div className="sm:col-span-2 lg:col-span-1">
-              <div className="mb-4 flex items-center gap-2.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
-                </span>
-                <span className="font-mono text-sm font-bold text-white">SmartLeads</span>
+          {/* Main card */}
+          <div className="relative overflow-visible rounded-2xl border border-black/8 bg-zinc-50/60 px-8 pb-12 pt-14 sm:px-12">
+
+            {/* Tape — top left */}
+            <div
+              className="absolute -top-[22px] left-10 z-10 h-10 w-[72px] rounded-lg bg-zinc-900 shadow-lg"
+              style={{ transform: 'rotate(-22deg)' }}
+              aria-hidden
+            />
+            {/* Tape — top right */}
+            <div
+              className="absolute -top-[22px] right-10 z-10 h-10 w-[72px] rounded-lg bg-zinc-900 shadow-lg"
+              style={{ transform: 'rotate(22deg)' }}
+              aria-hidden
+            />
+
+            <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+
+              {/* Brand */}
+              <div className="sm:col-span-2 lg:col-span-1">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-zinc-900" />
+                  <span className="font-mono text-sm font-bold text-zinc-900">SmartLeads</span>
+                </div>
+                <p className="max-w-[200px] text-[13px] leading-relaxed text-zinc-500">
+                  AI-powered lead qualification. Score every inquiry before it goes cold.
+                </p>
               </div>
-              <p className="max-w-xs text-sm leading-relaxed text-zinc-500">
-                AI-powered lead qualification engine. Score every inquiry
-                before it goes cold.
-              </p>
-              {/* Social links — replace # with your actual URLs */}
-              <div className="mt-6 flex items-center gap-3">
-                <a href="#" aria-label="GitHub"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-zinc-500 transition-all hover:border-white/25 hover:text-white">
-                  <Github className="h-3.5 w-3.5" />
-                </a>
-                <a href="#" aria-label="LinkedIn"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-zinc-500 transition-all hover:border-white/25 hover:text-white">
-                  <Linkedin className="h-3.5 w-3.5" />
-                </a>
-                <a href="#" aria-label="Upwork"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 transition-all hover:border-white/25">
-                  <span className="font-mono text-[10px] font-bold text-zinc-500 transition-colors hover:text-white">UP</span>
-                </a>
+
+              {/* Product */}
+              <div>
+                <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
+                  Product
+                </h4>
+                <ul className="space-y-3.5">
+                  {[
+                    { label: 'How it works', href: '#' },
+                    { label: 'Live demo',    href: '#' },
+                    { label: 'Admin login',  href: '/admin/login' },
+                  ].map(l => (
+                    <li key={l.label}>
+                      <a href={l.href}
+                        className="text-[13px] text-zinc-500 transition-colors hover:text-zinc-900">
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
 
-            {/* Product */}
-            <div>
-              <h4 className="mb-5 font-mono text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
-                Product
-              </h4>
-              <ul className="space-y-3">
-                {[
-                  { label: 'How it works', href: '#' },
-                  { label: 'Live demo', href: '#' },
-                  { label: 'Admin login', href: '/admin/login' },
-                ].map(l => (
-                  <li key={l.label}>
-                    <a href={l.href}
-                      className="group flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-white">
-                      {l.label}
-                      <ArrowRight className="h-3 w-3 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              {/* Stack */}
+              <div>
+                <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
+                  Built with
+                </h4>
+                <ul className="space-y-3.5">
+                  {['Next.js 15', 'TypeScript', 'Groq AI', 'Supabase', 'Make.com'].map(s => (
+                    <li key={s} className="text-[13px] text-zinc-500">{s}</li>
+                  ))}
+                </ul>
+              </div>
 
-            {/* Stack */}
-            <div>
-              <h4 className="mb-5 font-mono text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
-                Built with
-              </h4>
-              <ul className="space-y-3">
-                {['Next.js 15', 'TypeScript', 'Groq AI', 'Supabase', 'Make.com'].map(s => (
-                  <li key={s} className="text-sm text-zinc-500">{s}</li>
-                ))}
-              </ul>
-            </div>
+              {/* Connect */}
+              <div>
+                <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
+                  Connect
+                </h4>
+                <ul className="space-y-3.5">
+                  {SOCIALS.map(s => (
+                    <li key={s.label}>
+                      <a href={s.href} target="_blank" rel="noopener noreferrer"
+                        className="group inline-flex items-center gap-1.5 text-[13px] text-zinc-500 transition-colors hover:text-zinc-900">
+                        {s.label}
+                        <ExternalLink className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-            {/* Developer */}
-            <div>
-              <h4 className="mb-5 font-mono text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
-                Developer
-              </h4>
-              <ul className="space-y-3">
-                {[
-                  { label: 'Upwork Profile', href: 'https://www.upwork.com/freelancers/joshuaasiribo' },
-                  { label: 'Portfolio', href: '#' },
-                ].map(l => (
-                  <li key={l.label}>
-                    <a href={l.href} target="_blank" rel="noopener noreferrer"
-                      className="group flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-white">
-                      {l.label}
-                      <ArrowRight className="h-3 w-3 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
             </div>
-
           </div>
 
           {/* Bottom bar */}
-          <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-white/6 pt-8 sm:flex-row">
-            <p className="font-mono text-xs text-zinc-700">
-              © {new Date().getFullYear()} SmartLeads. All rights reserved.
-            </p>
-            <p className="font-mono text-xs text-zinc-700">
-              {/* Replace with your name */}
-              Built by Joshua Asiribo
-            </p>
+          <div className="flex flex-col items-center justify-between gap-4 py-8 text-[11px] text-zinc-400 sm:flex-row">
+            <p>© {new Date().getFullYear()} SmartLeads. All rights reserved.</p>
+
+            <div className="flex items-center gap-4">
+              <a href="https://joshua-asiribo.vercel.app/" target="_blank" rel="noopener noreferrer"
+                className="transition-colors hover:text-zinc-700">
+                Joshua Asiribo
+              </a>
+              <span>·</span>
+              <a href="https://www.upwork.com/freelancers/~01119b32ca7911f5c3?mp_source=share"
+                target="_blank" rel="noopener noreferrer"
+                className="transition-colors hover:text-zinc-700">
+                Upwork
+              </a>
+            </div>
+
+            {/* Social icon row */}
+            <div className="flex items-center gap-4">
+              {/* GitHub */}
+              <a href="https://github.com/olutobajosh" target="_blank" rel="noopener noreferrer"
+                className="transition-colors hover:text-zinc-900" aria-label="GitHub">
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+                  <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                </svg>
+              </a>
+
+              {/* LinkedIn */}
+              <a href="https://linkedin.com/in/joshuaasiribo" target="_blank" rel="noopener noreferrer"
+                className="transition-colors hover:text-zinc-900" aria-label="LinkedIn">
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                </svg>
+              </a>
+            </div>
           </div>
         </div>
       </footer>
