@@ -5,20 +5,20 @@
   --foreground: #09090b;
   --card: #ffffff;
   --card-foreground: #09090b;
-  --primary: #7c3aed;
+  --primary: #111111;
   --primary-foreground: #ffffff;
   --secondary: #f4f4f5;
   --secondary-foreground: #09090b;
   --muted: #f4f4f5;
   --muted-foreground: #71717a;
-  --accent: #7c3aed;
+  --accent: #111111;
   --accent-foreground: #ffffff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: rgba(0, 0, 0, 0.1);
   --input: rgba(0, 0, 0, 0.04);
-  --input-focus: rgba(124, 58, 237, 0.06);
-  --ring: rgba(124, 58, 237, 0.35);
+  --input-focus: rgba(0, 0, 0, 0.06);
+  --ring: rgba(0, 0, 0, 0.2);
 }
 
 @theme inline {
@@ -51,7 +51,6 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Scrollbar — subtle on white */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 3px; }

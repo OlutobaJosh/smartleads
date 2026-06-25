@@ -30,10 +30,11 @@ const PIPELINE = [
   { idx: '04', title: 'Dispatch', desc: 'Make.com fires the right automated reply via Gmail.' },
 ];
 
+// Score result colours — these stay coloured for functional clarity (HOT/WARM/COLD)
 const SCORE_THEME: Record<ScoreLabel, { bar: string; bg: string; border: string }> = {
   HOT:  { bar: '#ef4444', bg: 'rgba(239,68,68,0.06)',  border: 'rgba(239,68,68,0.18)'  },
   WARM: { bar: '#f59e0b', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.18)' },
-  COLD: { bar: '#6366f1', bg: 'rgba(99,102,241,0.06)', border: 'rgba(99,102,241,0.18)' },
+  COLD: { bar: '#525252', bg: 'rgba(82,82,82,0.06)',   border: 'rgba(82,82,82,0.18)'   },
 };
 
 const BADGE_VARIANT: Record<ScoreLabel, 'hot' | 'warm' | 'cold'> = {
@@ -66,7 +67,6 @@ export default function Home() {
   });
   const [state, setState] = useState<SubmitState>({ status: 'idle' });
 
-  /* Warm the Render server silently on page load */
   useEffect(() => {
     fetch('/api/health').catch(() => {});
   }, []);
@@ -79,7 +79,6 @@ export default function Home() {
     setForm(f => ({ ...f, [field]: value }));
   }
 
-  /* Submit with silent auto-retry for Render cold starts */
   async function submit() {
     setState({ status: 'sending' });
 
@@ -132,12 +131,12 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground">
 
-      {/* ── Nav — always dark, sits over the black hero ─────── */}
-      <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-white/8 bg-[#060610]/90 px-6 py-4 backdrop-blur-md sm:px-8">
+      {/* ── Nav — always black, sits over the black hero ─────── */}
+      <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-white/8 bg-black/90 px-6 py-4 backdrop-blur-md sm:px-8">
         <span className="flex items-center gap-2.5 font-mono text-sm font-bold tracking-tight text-white">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-60" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-400" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-50" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
           </span>
           SmartLeads
         </span>
@@ -146,14 +145,14 @@ export default function Home() {
         </span>
       </nav>
 
-      {/* ── Hero — Three.js woven particle system (untouched) ── */}
+      {/* ── Hero — black bg, white/silver particles (untouched animation) ── */}
       <WovenHeroSection
         onScrollToForm={() =>
           formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         }
       />
 
-      {/* ── Pipeline — white background, dark text ───────────── */}
+      {/* ── Pipeline — white bg, black text, no purple ───────── */}
       <section className="bg-white px-6 py-14">
         <div className="mx-auto max-w-4xl">
           <div className="grid grid-cols-1 gap-px rounded-xl border border-black/8 bg-black/8 sm:grid-cols-4">
@@ -168,7 +167,8 @@ export default function Home() {
                   first:rounded-tl-xl first:rounded-bl-xl last:rounded-tr-xl last:rounded-br-xl
                   sm:first:rounded-l-xl sm:last:rounded-r-xl"
               >
-                <span className="font-mono text-xs font-semibold text-violet-600">{step.idx}</span>
+                {/* Step number — black, not purple */}
+                <span className="font-mono text-xs font-semibold text-zinc-400">{step.idx}</span>
                 <span className="font-mono text-sm font-bold text-zinc-900">{step.title}</span>
                 <span className="text-xs leading-relaxed text-zinc-500">{step.desc}</span>
               </motion.div>
@@ -180,28 +180,27 @@ export default function Home() {
       {/* ── Form section — white + FloatingPaths animation ───── */}
       <section
         ref={formRef}
-        className="relative scroll-mt-0 overflow-hidden bg-white pb-28 pt-8"
+        className="relative scroll-mt-0 overflow-hidden bg-zinc-50 pb-28 pt-8"
       >
-        {/* BackgroundPaths animation — dark flowing lines on white */}
+        {/* BackgroundPaths animation — dark lines on light background */}
         <FloatingPaths position={1} />
         <FloatingPaths position={-1} />
 
-        {/* Form card sits on top of the animation */}
         <div className="relative z-10 mx-auto max-w-lg px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5 }}
-            className="overflow-hidden rounded-xl border border-black/10 bg-white shadow-xl shadow-black/5"
+            className="overflow-hidden rounded-xl border border-black/8 bg-white shadow-xl shadow-black/5"
           >
             {/* Editor chrome */}
-            <div className="flex items-center justify-between border-b border-black/8 bg-zinc-50 px-4 py-2.5">
+            <div className="flex items-center justify-between border-b border-black/6 bg-zinc-50 px-4 py-2.5">
               <span className="font-mono text-xs text-zinc-400">live_demo.tsx</span>
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-zinc-200" />
                 <span className="h-2.5 w-2.5 rounded-full bg-zinc-200" />
-                <span className="h-2.5 w-2.5 rounded-full bg-violet-300" />
+                <span className="h-2.5 w-2.5 rounded-full bg-zinc-400" />
               </div>
             </div>
 
@@ -268,7 +267,6 @@ export default function Home() {
 
               </div>
 
-              {/* Submit + result */}
               <div className="mt-5 flex flex-col gap-3">
                 <Button
                   type="button" size="lg" className="w-full"
@@ -316,7 +314,6 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* Animated score bar */}
                       <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-black/8">
                         <motion.div
                           className="h-full rounded-full"
