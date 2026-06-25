@@ -4,7 +4,7 @@ import { useRef, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import * as THREE from 'three';
 
-/* ─── Three.js Canvas ────────────────────────────────────────── */
+/* ─── Three.js Canvas — untouched ───────────────────────────── */
 const WovenCanvas = () => {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +49,6 @@ const WovenCanvas = () => {
       positions[i * 3 + 1] = origPositions[i * 3 + 1] = y;
       positions[i * 3 + 2] = origPositions[i * 3 + 2] = z;
 
-      // White → silver grayscale — pure black and white palette
       const lightness = 0.55 + Math.random() * 0.45;
       const color = new THREE.Color();
       color.setHSL(0, 0, lightness);
@@ -89,7 +88,6 @@ const WovenCanvas = () => {
 
       for (let i = 0; i < particleCount; i++) {
         const ix = i * 3, iy = ix + 1, iz = ix + 2;
-
         const dx = positions[ix] - mx;
         const dy = positions[iy] - my;
         const dz = positions[iz];
@@ -105,11 +103,9 @@ const WovenCanvas = () => {
         velocities[ix] += (origPositions[ix] - positions[ix]) * 0.0012;
         velocities[iy] += (origPositions[iy] - positions[iy]) * 0.0012;
         velocities[iz] += (origPositions[iz] - positions[iz]) * 0.0012;
-
         velocities[ix] *= 0.94;
         velocities[iy] *= 0.94;
         velocities[iz] *= 0.94;
-
         positions[ix] += velocities[ix];
         positions[iy] += velocities[iy];
         positions[iz] += velocities[iz];
@@ -135,9 +131,7 @@ const WovenCanvas = () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('resize', onResize);
-      if (container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
+      if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
       geometry.dispose();
       material.dispose();
       torusKnot.dispose();
@@ -153,6 +147,11 @@ interface WovenHeroSectionProps {
   onScrollToForm: () => void;
 }
 
+// Dark shadow applied to every text element so white letters
+// pop clearly against the white particle cloud.
+const TEXT_SHADOW = '0 2px 12px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,0.95), 2px 2px 6px rgba(0,0,0,1)';
+const SUBTLE_SHADOW = '0 1px 8px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9)';
+
 export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
   const textControls   = useAnimation();
   const buttonControls = useAnimation();
@@ -167,9 +166,9 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
       opacity: 1,
       y: 0,
       transition: {
-        delay:    i * 0.038 + 1.0,
+        delay: i * 0.038 + 1.0,
         duration: 1.1,
-        ease:     [0.2, 0.65, 0.3, 0.9],
+        ease: [0.2, 0.65, 0.3, 0.9],
       },
     }));
 
@@ -188,28 +187,17 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
   const line1CharCount = line1.replace(/ /g, '').length;
 
   return (
-    // Pure black background — no purple tint
     <section className="relative flex min-h-[calc(100vh-57px)] w-full flex-col items-center justify-center overflow-hidden bg-black">
       <WovenCanvas />
 
-      {/* Very subtle white glow behind text for depth */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        aria-hidden
-        style={{
-          background:
-            'radial-gradient(ellipse 50% 40% at 50% 52%, rgba(255,255,255,0.04) 0%, transparent 70%)',
-        }}
-      />
-
+      {/* Content */}
       <div className="relative z-10 px-4 text-center">
 
-        {/* ── Headline — letter-by-letter spring animation ──── */}
         <h1
           className="mb-0 text-5xl font-bold leading-tight sm:text-7xl md:text-8xl"
           style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
         >
-          {/* Line 1 — bright white */}
+          {/* Line 1 — bright white with dark shadow for contrast */}
           <span className="mb-1 block">
             {line1.split(' ').map((word, wi) => (
               <span key={wi} className="mr-[0.25em] inline-block last:mr-0">
@@ -220,7 +208,7 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
                     initial={{ opacity: 0, y: 55 }}
                     animate={textControls}
                     className="inline-block text-white"
-                    style={{ textShadow: '0 0 60px rgba(255,255,255,0.2)' }}
+                    style={{ textShadow: TEXT_SHADOW }}
                   >
                     {char}
                   </motion.span>
@@ -229,7 +217,7 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
             ))}
           </span>
 
-          {/* Line 2 — silver/light-gray, distinct from white but no purple */}
+          {/* Line 2 — light gray with same dark shadow */}
           <span className="block">
             {line2.split(' ').map((word, wi) => (
               <span key={wi} className="mr-[0.25em] inline-block last:mr-0">
@@ -242,7 +230,7 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
                       initial={{ opacity: 0, y: 55 }}
                       animate={textControls}
                       className="inline-block"
-                      style={{ color: '#b4b4b4' }}
+                      style={{ color: '#c8c8c8', textShadow: TEXT_SHADOW }}
                     >
                       {char}
                     </motion.span>
@@ -253,7 +241,7 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
           </span>
         </h1>
 
-        {/* Subtitle — higher opacity for better readability */}
+        {/* Subtitle — higher opacity + shadow */}
         <motion.p
           custom={line1CharCount + line2.replace(/ /g, '').length + 12}
           initial={{ opacity: 0, y: 28 }}
@@ -261,7 +249,8 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
           className="mx-auto mt-7 max-w-md text-base leading-relaxed"
           style={{
             fontFamily: 'var(--font-geist-sans, Inter, sans-serif)',
-            color: 'rgba(255,255,255,0.65)',
+            color: 'rgba(255,255,255,0.72)',
+            textShadow: SUBTLE_SHADOW,
           }}
         >
           SmartLeads reads inbound project inquiries, scores them against
@@ -269,7 +258,7 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
           automatically. No manual triage needed.
         </motion.p>
 
-        {/* CTA */}
+        {/* CTA — solid white pill for maximum contrast */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={buttonControls}
@@ -278,13 +267,19 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
           <button
             type="button"
             onClick={onScrollToForm}
-            className="rounded-full border border-white/20 bg-white/10 px-8 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/18 hover:border-white/35"
+            className="rounded-full bg-white px-8 py-3 text-sm font-semibold text-black shadow-lg shadow-black/20 transition-all duration-200 hover:bg-zinc-100 hover:scale-[1.02]"
             style={{ fontFamily: 'var(--font-geist-sans, Inter, sans-serif)' }}
           >
             See it live ↓
           </button>
         </motion.div>
       </div>
+
+      {/* Gradient fade — bridges the hard black → white cut */}
+      <div
+        className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 h-32"
+        style={{ background: 'linear-gradient(to bottom, transparent, #ffffff)' }}
+      />
     </section>
   );
 }
