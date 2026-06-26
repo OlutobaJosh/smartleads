@@ -28,10 +28,8 @@ export function CustomSelect({
 }: CustomSelectProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
   const selected = options.find(o => o.value === value);
 
-  // Close on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -42,7 +40,6 @@ export function CustomSelect({
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  // Close on Escape
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false);
@@ -53,24 +50,24 @@ export function CustomSelect({
 
   return (
     <div ref={containerRef} className={cn('relative w-full', className)} id={id}>
-      {/* Trigger */}
+      {/* Trigger — white background to pop on zinc-100 card */}
       <button
         type="button"
         onClick={() => setOpen(prev => !prev)}
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          'flex h-10 w-full items-center justify-between rounded-md border border-border bg-input px-3.5 text-sm outline-none transition-all duration-150',
+          'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3.5 text-sm outline-none transition-all duration-150',
           open
-            ? 'border-accent/50 bg-input-focus ring-2 ring-ring/30'
-            : 'hover:border-border/60',
-          selected ? 'text-foreground' : 'text-muted-foreground/60'
+            ? 'border-black/25 ring-2 ring-black/8 shadow-sm'
+            : 'border-black/10 hover:border-black/20 shadow-sm',
+          selected ? 'text-zinc-900' : 'text-zinc-400'
         )}
       >
         <span className="truncate">{selected ? selected.label : placeholder}</span>
         <ChevronDown
           className={cn(
-            'ml-2 h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform duration-150',
+            'ml-2 h-4 w-4 flex-shrink-0 text-zinc-400 transition-transform duration-150',
             open && 'rotate-180'
           )}
           aria-hidden
@@ -81,19 +78,19 @@ export function CustomSelect({
       {open && (
         <div
           role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-md border border-border bg-card shadow-xl shadow-black/50"
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-xl border border-black/8 bg-white shadow-xl shadow-black/10"
         >
-          {/* Placeholder option */}
+          {/* Placeholder */}
           <div
             role="option"
             aria-selected={value === ''}
             onClick={() => { onChange(''); setOpen(false); }}
-            className="flex cursor-pointer items-center px-3.5 py-2.5 text-sm text-muted-foreground/60 transition-colors hover:bg-secondary"
+            className="flex cursor-pointer items-center px-3.5 py-2.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-50"
           >
             {placeholder}
           </div>
 
-          <div className="border-t border-border/50" />
+          <div className="border-t border-black/5" />
 
           {options.map(opt => (
             <div
@@ -102,12 +99,12 @@ export function CustomSelect({
               aria-selected={value === opt.value}
               onClick={() => { onChange(opt.value); setOpen(false); }}
               className={cn(
-                'flex cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-sm transition-colors hover:bg-secondary',
-                value === opt.value ? 'text-accent' : 'text-foreground'
+                'flex cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-sm transition-colors hover:bg-zinc-50',
+                value === opt.value ? 'text-zinc-900 font-medium' : 'text-zinc-600'
               )}
             >
               <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center">
-                {value === opt.value && <Check className="h-3 w-3 text-accent" />}
+                {value === opt.value && <Check className="h-3 w-3 text-zinc-900" />}
               </span>
               {opt.label}
             </div>

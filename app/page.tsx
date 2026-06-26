@@ -32,9 +32,9 @@ const PIPELINE: { idx: string; title: string; desc: string; Icon: LucideIcon }[]
 ];
 
 const SCORE_THEME: Record<ScoreLabel, { bar: string; bg: string; border: string }> = {
-  HOT:  { bar: '#ef4444', bg: 'rgba(239,68,68,0.06)',  border: 'rgba(239,68,68,0.18)'  },
-  WARM: { bar: '#f59e0b', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.18)' },
-  COLD: { bar: '#525252', bg: 'rgba(82,82,82,0.06)',   border: 'rgba(82,82,82,0.18)'   },
+  HOT:  { bar: '#ef4444', bg: 'rgba(239,68,68,0.06)',  border: 'rgba(239,68,68,0.2)'  },
+  WARM: { bar: '#f59e0b', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.2)' },
+  COLD: { bar: '#71717a', bg: 'rgba(113,113,122,0.06)',border: 'rgba(113,113,122,0.2)'},
 };
 
 const BADGE_VARIANT: Record<ScoreLabel, 'hot' | 'warm' | 'cold'> = {
@@ -58,7 +58,6 @@ const BUDGET_OPTIONS = [
   { label: '$5,000+',         value: '$5,000+'         },
 ];
 
-/* ─── Social links ───────────────────────────────────────────── */
 const SOCIALS = [
   { label: 'Upwork',    href: 'https://www.upwork.com/freelancers/~01119b32ca7911f5c3?mp_source=share' },
   { label: 'GitHub',    href: 'https://github.com/olutobajosh'                                         },
@@ -69,10 +68,7 @@ const SOCIALS = [
 /* ─── Page ───────────────────────────────────────────────────── */
 export default function Home() {
   const formRef = useRef<HTMLElement>(null);
-
-  const [form, setForm] = useState({
-    name: '', email: '', businessType: '', budget: '', message: '',
-  });
+  const [form, setForm] = useState({ name: '', email: '', businessType: '', budget: '', message: '' });
   const [state, setState] = useState<SubmitState>({ status: 'idle' });
 
   useEffect(() => { fetch('/api/health').catch(() => {}); }, []);
@@ -148,36 +144,30 @@ export default function Home() {
       />
 
       {/* ── Pipeline ─────────────────────────────────────────── */}
-      <section className="bg-white px-6 pb-24 pt-20">
+      <section className="bg-white px-6 pb-28 pt-20">
         <div className="mx-auto max-w-5xl">
 
-          {/* Section label */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4 }}
-            className="mb-14 text-center"
+            className="mb-16 text-center"
           >
-            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400">
-              How it works
-            </p>
-            <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-              Four steps. Zero delay.
-            </h2>
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400">How it works</p>
+            <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">Four steps. Zero delay.</h2>
           </motion.div>
 
-          {/* Cards + connecting line wrapper */}
           <div className="relative">
 
-            {/* ── Animated connector line — desktop only ──────── */}
+            {/* Connector line — desktop only */}
             <motion.div
               className="pointer-events-none absolute hidden h-px lg:block"
               style={{
-                top: 44,          // vertically aligns with icon centre
-                left: '12.5%',    // centre of first card
-                right: '12.5%',   // centre of last card
-                background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.1) 15%, rgba(0,0,0,0.1) 85%, transparent)',
+                top: 44,
+                left: '12.5%',
+                right: '12.5%',
+                background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.08) 15%, rgba(0,0,0,0.08) 85%, transparent)',
               }}
               initial={{ scaleX: 0, originX: 0 }}
               whileInView={{ scaleX: 1 }}
@@ -185,16 +175,12 @@ export default function Home() {
               transition={{ duration: 1.6, ease: 'easeOut', delay: 0.1 }}
             />
 
-            {/* ── Pipeline node dots — desktop only ───────────── */}
+            {/* Node dots on the line */}
             {[0.125, 0.375, 0.625, 0.875].map((pos, i) => (
               <motion.div
                 key={i}
-                className="pointer-events-none absolute hidden h-2 w-2 rounded-full border border-black/15 bg-white lg:block"
-                style={{
-                  top: 36,
-                  left: `${pos * 100}%`,
-                  transform: 'translateX(-50%)',
-                }}
+                className="pointer-events-none absolute hidden h-2 w-2 rounded-full border border-black/12 bg-white shadow-sm lg:block"
+                style={{ top: 36, left: `${pos * 100}%`, transform: 'translateX(-50%)' }}
                 initial={{ scale: 0 }}
                 whileInView={{ scale: 1 }}
                 viewport={{ once: true }}
@@ -202,66 +188,73 @@ export default function Home() {
               />
             ))}
 
-            {/* ── Cards ───────────────────────────────────────── */}
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Cards */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {PIPELINE.map((step, i) => (
+                // ── Outer: float animation + hover lift ──
                 <motion.div
                   key={step.idx}
-                  initial={{ opacity: 0, y: 28 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-20px' }}
-                  transition={{ delay: i * 0.12, duration: 0.5, ease: [0.21, 1.02, 0.73, 1] }}
-                  className="group relative overflow-hidden rounded-2xl border border-black/8 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-black/8 hover:border-black/12"
+                  className="group cursor-pointer"
+                  // Gentle continuous float — staggered so cards form a wave
+                  animate={{ y: [0, -9, 0] }}
+                  transition={{
+                    duration: 3 + i * 0.35,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    delay: i * 0.55 + 0.75,
+                  }}
+                  // Dramatic hover lift overrides the float
+                  whileHover={{
+                    y: -20,
+                    scale: 1.04,
+                    transition: { duration: 0.22, ease: 'easeOut' },
+                  }}
+                  style={{ willChange: 'transform' }}
                 >
-                  {/* Ghost step number */}
-                  <span
-                    className="pointer-events-none absolute -bottom-2 -right-1 select-none font-black leading-none text-black/[0.045] transition-all duration-500 group-hover:text-black/[0.09]"
-                    style={{ fontSize: '6rem' }}
-                    aria-hidden
+                  {/* ── Inner: scroll entrance ── */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 32 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-20px' }}
+                    transition={{ delay: i * 0.12, duration: 0.55, ease: [0.21, 1.02, 0.73, 1] }}
+                    className="relative overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-6 transition-shadow duration-300 group-hover:shadow-[0_24px_60px_rgba(0,0,0,0.13),_0_6px_14px_rgba(0,0,0,0.07)]"
+                    style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.07), 0 1px 5px rgba(0,0,0,0.04)' }}
                   >
-                    {step.idx}
-                  </span>
-
-                  {/* Icon with bounce entrance + ripple pulse */}
-                  <div className="relative mb-5 inline-flex">
-                    {/* Ripple ring — fires once on viewport entry */}
-                    <motion.div
-                      className="absolute inset-0 rounded-xl border border-black/20"
-                      initial={{ scale: 1, opacity: 0 }}
-                      whileInView={{
-                        scale: [1, 2.2, 3.2],
-                        opacity: [0.4, 0.15, 0],
-                      }}
-                      viewport={{ once: true }}
-                      transition={{
-                        delay: i * 0.22 + 0.7,
-                        duration: 0.9,
-                        ease: 'easeOut',
-                      }}
-                    />
-
-                    {/* Icon box */}
-                    <motion.div
-                      className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-black/8 bg-zinc-50 transition-all duration-300 group-hover:border-zinc-900 group-hover:bg-zinc-900 group-hover:shadow-md"
-                      initial={{ scale: 0 }}
-                      whileInView={{ scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{
-                        delay: i * 0.12 + 0.25,
-                        type: 'spring',
-                        stiffness: 320,
-                        damping: 14,
-                      }}
+                    {/* Ghost number */}
+                    <span
+                      className="pointer-events-none absolute -bottom-2 -right-1 select-none font-black leading-none text-black/[0.04] transition-all duration-500 group-hover:text-black/[0.08]"
+                      style={{ fontSize: '6rem' }}
+                      aria-hidden
                     >
-                      <step.Icon className="h-4 w-4 text-zinc-500 transition-colors duration-300 group-hover:text-white" />
-                    </motion.div>
-                  </div>
+                      {step.idx}
+                    </span>
 
-                  <h3 className="mb-2 font-mono text-sm font-bold text-zinc-900">{step.title}</h3>
-                  <p className="text-[13px] leading-relaxed text-zinc-500">{step.desc}</p>
+                    {/* Icon + ripple */}
+                    <div className="relative mb-5 inline-flex">
+                      <motion.div
+                        className="absolute inset-0 rounded-xl border border-black/18"
+                        initial={{ scale: 1, opacity: 0 }}
+                        whileInView={{ scale: [1, 2.3, 3.4], opacity: [0.45, 0.15, 0] }}
+                        viewport={{ once: true }}
+                        transition={{ delay: i * 0.22 + 0.75, duration: 0.95, ease: 'easeOut' }}
+                      />
+                      <motion.div
+                        className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-black/8 bg-zinc-50 transition-all duration-300 group-hover:border-zinc-900 group-hover:bg-zinc-900"
+                        initial={{ scale: 0 }}
+                        whileInView={{ scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: i * 0.12 + 0.25, type: 'spring', stiffness: 320, damping: 14 }}
+                      >
+                        <step.Icon className="h-4 w-4 text-zinc-500 transition-colors duration-300 group-hover:text-white" />
+                      </motion.div>
+                    </div>
 
-                  {/* Bottom sweep line on hover */}
-                  <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-zinc-900 transition-all duration-500 group-hover:w-full" />
+                    <h3 className="mb-2 font-mono text-sm font-bold text-zinc-900">{step.title}</h3>
+                    <p className="text-[13px] leading-relaxed text-zinc-500">{step.desc}</p>
+
+                    {/* Bottom sweep */}
+                    <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-zinc-900 transition-all duration-500 group-hover:w-full" />
+                  </motion.div>
                 </motion.div>
               ))}
             </div>
@@ -269,7 +262,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Divider ──────────────────────────────────────────── */}
       <div className="h-px bg-gradient-to-r from-transparent via-black/8 to-transparent" />
 
       {/* ── Form section ─────────────────────────────────────── */}
@@ -289,23 +281,16 @@ export default function Home() {
             <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Try it right now.</h2>
           </motion.div>
 
+          {/* ── Form card — grey/zinc, no chrome bar, pops out ── */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="overflow-hidden rounded-2xl border border-black/8 bg-white shadow-2xl shadow-black/6"
+            className="overflow-hidden rounded-2xl border border-black/[0.06] bg-zinc-100"
+            style={{ boxShadow: '0 12px 48px rgba(0,0,0,0.1), 0 3px 10px rgba(0,0,0,0.06)' }}
           >
-            <div className="flex items-center justify-between border-b border-black/6 bg-zinc-50/80 px-4 py-2.5">
-              <span className="font-mono text-xs text-zinc-400">live_demo.tsx</span>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-zinc-200" />
-                <span className="h-2.5 w-2.5 rounded-full bg-zinc-200" />
-                <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
-              </div>
-            </div>
-
-            <div className="p-6">
+            <div className="p-7">
               <p className="mb-6 text-sm leading-relaxed text-zinc-500">
                 Submit a real inquiry. The engine scores it live and shows its reasoning below.
               </p>
@@ -314,37 +299,49 @@ export default function Home() {
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="name">Full name</Label>
                   <Input id="name" name="name" type="text" placeholder="Jane Okafor"
-                    value={form.name} onChange={set} autoComplete="off" />
+                    value={form.name} onChange={set} autoComplete="off"
+                    className="border-black/10 bg-white shadow-sm hover:border-black/20 focus-visible:border-black/25 focus-visible:ring-black/8" />
                 </div>
+
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="email">Email address</Label>
                   <Input id="email" name="email" type="email" placeholder="jane@company.com"
-                    value={form.email} onChange={set} autoComplete="off" />
+                    value={form.email} onChange={set} autoComplete="off"
+                    className="border-black/10 bg-white shadow-sm hover:border-black/20 focus-visible:border-black/25 focus-visible:ring-black/8" />
                 </div>
+
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="businessType">Business type</Label>
                   <CustomSelect id="businessType" value={form.businessType}
                     onChange={val => setField('businessType', val)} options={BUSINESS_OPTIONS} />
                 </div>
+
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="budget">Budget range</Label>
                   <CustomSelect id="budget" value={form.budget}
                     onChange={val => setField('budget', val)} options={BUDGET_OPTIONS} />
                 </div>
+
                 <div className="col-span-full flex flex-col gap-2">
                   <Label htmlFor="message">Project description</Label>
                   <Textarea id="message" name="message"
                     placeholder="Describe what you're trying to build or solve…"
-                    value={form.message} onChange={set} rows={3} />
+                    value={form.message} onChange={set} rows={3}
+                    className="border-black/10 bg-white shadow-sm hover:border-black/20 focus-visible:border-black/25 focus-visible:ring-black/8 resize-none" />
                   <p className="text-xs text-zinc-400">More detail → more accurate score.</p>
                 </div>
               </div>
 
               <div className="mt-5 flex flex-col gap-3">
-                <Button type="button" size="lg" className="w-full" disabled={!canSubmit} onClick={submit}>
+                {/* White button on grey card */}
+                <Button
+                  type="button" size="lg" disabled={!canSubmit} onClick={submit}
+                  className="w-full border border-black/10 bg-white text-zinc-900 shadow-sm hover:bg-zinc-50 hover:text-zinc-900 hover:shadow-md disabled:bg-white/60"
+                  style={{ background: canSubmit ? '#ffffff' : 'rgba(255,255,255,0.6)' }}
+                >
                   {state.status === 'sending' ? (
                     <>
-                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-700" />
                       Qualifying…
                     </>
                   ) : (
@@ -367,8 +364,7 @@ export default function Home() {
                         <span className="text-zinc-500">LEAD_SCORE</span>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-zinc-900">
-                            {state.result.score}
-                            <span className="text-xs font-normal text-zinc-400">/100</span>
+                            {state.result.score}<span className="text-xs font-normal text-zinc-400">/100</span>
                           </span>
                           <Badge variant={BADGE_VARIANT[state.result.label]}>{state.result.label}</Badge>
                         </div>
@@ -399,7 +395,7 @@ export default function Home() {
                   )}
                 </AnimatePresence>
 
-                <p className="text-center font-mono text-[10px] text-zinc-300">
+                <p className="text-center font-mono text-[10px] text-zinc-400">
                   no spam · no sales calls · automated reply only
                 </p>
               </div>
@@ -408,44 +404,43 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Footer — taped design (21st.dev style) ───────────── */}
+      {/* ── Footer ───────────────────────────────────────────── */}
       <footer className="bg-white px-6 pb-0 pt-16">
         <div className="mx-auto max-w-6xl">
 
-          {/* Main card */}
-          <div className="relative overflow-visible rounded-2xl border border-black/8 bg-zinc-50/60 px-8 pb-12 pt-14 sm:px-12">
-
-            {/* Tape — top left */}
+          {/* Footer card with tape decorations and deep shadow */}
+          <div
+            className="relative overflow-visible rounded-2xl border border-black/[0.06] bg-zinc-50/70 px-8 pb-12 pt-14 sm:px-12"
+            style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.07), 0 2px 10px rgba(0,0,0,0.04)' }}
+          >
+            {/* Tape left */}
             <div
-              className="absolute -top-[22px] left-10 z-10 h-10 w-[72px] rounded-lg bg-zinc-900 shadow-lg"
-              style={{ transform: 'rotate(-22deg)' }}
+              className="absolute -top-[22px] left-10 z-10 h-10 w-[70px] rounded-lg bg-zinc-900"
+              style={{ transform: 'rotate(-22deg)', boxShadow: '0 4px 12px rgba(0,0,0,0.25)' }}
               aria-hidden
             />
-            {/* Tape — top right */}
+            {/* Tape right */}
             <div
-              className="absolute -top-[22px] right-10 z-10 h-10 w-[72px] rounded-lg bg-zinc-900 shadow-lg"
-              style={{ transform: 'rotate(22deg)' }}
+              className="absolute -top-[22px] right-10 z-10 h-10 w-[70px] rounded-lg bg-zinc-900"
+              style={{ transform: 'rotate(22deg)', boxShadow: '0 4px 12px rgba(0,0,0,0.25)' }}
               aria-hidden
             />
 
             <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
-
               {/* Brand */}
               <div className="sm:col-span-2 lg:col-span-1">
                 <div className="mb-3 flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-zinc-900" />
                   <span className="font-mono text-sm font-bold text-zinc-900">SmartLeads</span>
                 </div>
-                <p className="max-w-[200px] text-[13px] leading-relaxed text-zinc-500">
+                <p className="max-w-[190px] text-[13px] leading-relaxed text-zinc-500">
                   AI-powered lead qualification. Score every inquiry before it goes cold.
                 </p>
               </div>
 
               {/* Product */}
               <div>
-                <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
-                  Product
-                </h4>
+                <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">Product</h4>
                 <ul className="space-y-3.5">
                   {[
                     { label: 'How it works', href: '#' },
@@ -453,10 +448,7 @@ export default function Home() {
                     { label: 'Admin login',  href: '/admin/login' },
                   ].map(l => (
                     <li key={l.label}>
-                      <a href={l.href}
-                        className="text-[13px] text-zinc-500 transition-colors hover:text-zinc-900">
-                        {l.label}
-                      </a>
+                      <a href={l.href} className="text-[13px] text-zinc-500 transition-colors hover:text-zinc-900">{l.label}</a>
                     </li>
                   ))}
                 </ul>
@@ -464,9 +456,7 @@ export default function Home() {
 
               {/* Stack */}
               <div>
-                <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
-                  Built with
-                </h4>
+                <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">Built with</h4>
                 <ul className="space-y-3.5">
                   {['Next.js 15', 'TypeScript', 'Groq AI', 'Supabase', 'Make.com'].map(s => (
                     <li key={s} className="text-[13px] text-zinc-500">{s}</li>
@@ -476,9 +466,7 @@ export default function Home() {
 
               {/* Connect */}
               <div>
-                <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
-                  Connect
-                </h4>
+                <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">Connect</h4>
                 <ul className="space-y-3.5">
                   {SOCIALS.map(s => (
                     <li key={s.label}>
@@ -491,38 +479,27 @@ export default function Home() {
                   ))}
                 </ul>
               </div>
-
             </div>
           </div>
 
           {/* Bottom bar */}
           <div className="flex flex-col items-center justify-between gap-4 py-8 text-[11px] text-zinc-400 sm:flex-row">
             <p>© {new Date().getFullYear()} SmartLeads. All rights reserved.</p>
-
             <div className="flex items-center gap-4">
               <a href="https://joshua-asiribo.vercel.app/" target="_blank" rel="noopener noreferrer"
-                className="transition-colors hover:text-zinc-700">
-                Joshua Asiribo
-              </a>
+                className="transition-colors hover:text-zinc-700">Joshua Asiribo</a>
               <span>·</span>
               <a href="https://www.upwork.com/freelancers/~01119b32ca7911f5c3?mp_source=share"
                 target="_blank" rel="noopener noreferrer"
-                className="transition-colors hover:text-zinc-700">
-                Upwork
-              </a>
+                className="transition-colors hover:text-zinc-700">Upwork</a>
             </div>
-
-            {/* Social icon row */}
             <div className="flex items-center gap-4">
-              {/* GitHub */}
               <a href="https://github.com/olutobajosh" target="_blank" rel="noopener noreferrer"
                 className="transition-colors hover:text-zinc-900" aria-label="GitHub">
                 <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
                   <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
                 </svg>
               </a>
-
-              {/* LinkedIn */}
               <a href="https://linkedin.com/in/joshuaasiribo" target="_blank" rel="noopener noreferrer"
                 className="transition-colors hover:text-zinc-900" aria-label="LinkedIn">
                 <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
