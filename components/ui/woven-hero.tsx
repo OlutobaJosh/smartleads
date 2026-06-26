@@ -190,7 +190,7 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={textControls}
           className="mt-5 font-mono text-xs uppercase tracking-[0.18em]"
-          style={{ color: 'rgba(255,255,255,0.35)', textShadow: SUBTLE_SHADOW }}
+          style={{ color: 'rgba(179, 234, 234, 0.4)', textShadow: SUBTLE_SHADOW }}
         >
           For freelancers & agencies
         </motion.p>
