@@ -111,7 +111,7 @@ const WovenCanvas = () => {
 interface WovenHeroSectionProps { onScrollToForm: () => void; }
 
 const TEXT_SHADOW   = '0 2px 12px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,0.95), 2px 2px 6px rgba(0,0,0,1)';
-const SUBTLE_SHADOW = '0 1px 8px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9)';
+const SUBTLE_SHADOW = '0 1px 10px rgba(0,0,0,1), 0 0 24px rgba(0,0,0,0.95)';
 
 export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
   const textControls   = useAnimation();
@@ -127,9 +127,12 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
       opacity: 1, y: 0,
       transition: { delay: i * 0.038 + 1.0, duration: 1.1, ease: [0.2, 0.65, 0.3, 0.9] },
     }));
-    buttonControls.start({ opacity: 1, transition: { delay: 2.2, duration: 0.9 } });
+    buttonControls.start({
+      opacity: 1,
+      transition: { delay: 2.2, duration: 0.9 },
+    });
 
-    return () => { if(document.head.contains(link)) document.head.removeChild(link); };
+    return () => { if (document.head.contains(link)) document.head.removeChild(link); };
   }, [textControls, buttonControls]);
 
   const line1 = 'Every inquiry';
@@ -153,28 +156,41 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
           className="mb-0 text-5xl font-bold leading-tight sm:text-7xl md:text-8xl"
           style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
         >
+          {/* Line 1 — white */}
           <span className="mb-1 block">
             {line1.split(' ').map((word, wi) => (
               <span key={wi} className="mr-[0.25em] inline-block last:mr-0">
                 {word.split('').map((char, ci) => (
-                  <motion.span key={`l1-${wi}-${ci}`} custom={wi*7+ci}
-                    initial={{ opacity: 0, y: 55 }} animate={textControls}
-                    className="inline-block text-white" style={{ textShadow: TEXT_SHADOW }}>
+                  <motion.span
+                    key={`l1-${wi}-${ci}`}
+                    custom={wi * 7 + ci}
+                    initial={{ opacity: 0, y: 55 }}
+                    animate={textControls}
+                    className="inline-block text-white"
+                    style={{ textShadow: TEXT_SHADOW }}
+                  >
                     {char}
                   </motion.span>
                 ))}
               </span>
             ))}
           </span>
+
+          {/* Line 2 — silver */}
           <span className="block">
             {line2.split(' ').map((word, wi) => (
               <span key={wi} className="mr-[0.25em] inline-block last:mr-0">
                 {word.split('').map((char, ci) => {
-                  const idx = line1CharCount + wi*7 + ci + 6;
+                  const idx = line1CharCount + wi * 7 + ci + 6;
                   return (
-                    <motion.span key={`l2-${wi}-${ci}`} custom={idx}
-                      initial={{ opacity: 0, y: 55 }} animate={textControls}
-                      className="inline-block" style={{ color: '#c8c8c8', textShadow: TEXT_SHADOW }}>
+                    <motion.span
+                      key={`l2-${wi}-${ci}`}
+                      custom={idx}
+                      initial={{ opacity: 0, y: 55 }}
+                      animate={textControls}
+                      className="inline-block"
+                      style={{ color: '#c8c8c8', textShadow: TEXT_SHADOW }}
+                    >
                       {char}
                     </motion.span>
                   );
@@ -184,34 +200,31 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
           </span>
         </h1>
 
-        {/* ── Who it's for — added for immediate clarity ───── */}
+        {/* ── Subtitle — "for freelancers & agencies" now lives  ──
+             here where TEXT_SHADOW keeps it readable over the
+             particle cloud. Removed as a standalone element above. ── */}
         <motion.p
-          custom={line1CharCount + line2.replace(/ /g,'').length + 8}
-          initial={{ opacity: 0, y: 20 }}
-          animate={textControls}
-          className="mt-5 font-mono text-xs uppercase tracking-[0.18em]"
-          style={{ color: 'rgba(179, 234, 234, 0.4)', textShadow: SUBTLE_SHADOW }}
-        >
-          For freelancers & agencies
-        </motion.p>
-
-        {/* ── Subtitle — concrete, no jargon ───────────────── */}
-        <motion.p
-          custom={line1CharCount + line2.replace(/ /g,'').length + 14}
+          custom={line1CharCount + line2.replace(/ /g, '').length + 10}
           initial={{ opacity: 0, y: 28 }}
           animate={textControls}
-          className="mx-auto mt-4 max-w-md text-base leading-relaxed"
-          style={{ fontFamily: 'var(--font-geist-sans, Inter, sans-serif)', color: 'rgba(255,255,255,0.68)', textShadow: SUBTLE_SHADOW }}
+          className="mx-auto mt-7 max-w-md text-base leading-relaxed"
+          style={{
+            fontFamily: 'var(--font-geist-sans, Inter, sans-serif)',
+            color: 'rgba(255,255,255,0.72)',
+            textShadow: SUBTLE_SHADOW,
+          }}
         >
-          When a potential client fills out your contact form, SmartLeads
-          scores their inquiry with AI and sends them the right reply —
-          automatically, in under 10 seconds. You don&apos;t touch a thing.
+          Built for freelancers &amp; agencies. When a potential client fills
+          out your contact form, SmartLeads scores their inquiry with AI and
+          sends the right reply — automatically, in under 10 seconds. You
+          don&apos;t touch a thing.
         </motion.p>
 
         {/* ── CTA ──────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0 }} animate={buttonControls} className="mt-10">
           <button
-            type="button" onClick={onScrollToForm}
+            type="button"
+            onClick={onScrollToForm}
             className="rounded-full bg-white px-8 py-3 text-sm font-semibold text-black shadow-lg shadow-black/20 transition-all duration-200 hover:bg-zinc-100 hover:scale-[1.02]"
             style={{ fontFamily: 'var(--font-geist-sans, Inter, sans-serif)' }}
           >
@@ -220,7 +233,7 @@ export function WovenHeroSection({ onScrollToForm }: WovenHeroSectionProps) {
         </motion.div>
       </div>
 
-      {/* Gradient fade to white */}
+      {/* Gradient fade hero → white sections */}
       <div
         className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 h-32"
         style={{ background: 'linear-gradient(to bottom, transparent, #ffffff)' }}
