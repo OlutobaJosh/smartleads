@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Zap, Inbox, Cpu, Tag, Send, ExternalLink } from 'lucide-react';
+import { Zap, Inbox, Cpu, Tag, Send, ExternalLink, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 
@@ -17,57 +17,31 @@ import { FloatingPaths }    from '@/components/ui/background-paths';
 /* ─── Types ──────────────────────────────────────────────────── */
 type ScoreLabel = 'HOT' | 'WARM' | 'COLD';
 type ScoreResult = { score: number; label: ScoreLabel; reason: string };
+type EmailPreview = { subject: string; body: string };
 type SubmitState =
   | { status: 'idle' }
   | { status: 'sending' }
-  | { status: 'sent'; result: ScoreResult; email: string }
+  | { status: 'sent'; result: ScoreResult; email: string; emailPreview: EmailPreview }
   | { status: 'error'; message: string };
 
 /* ─── Constants ──────────────────────────────────────────────── */
-// Descriptions now include score thresholds and concrete actions
-// so visitors understand exactly what happens at each step
 const PIPELINE: { idx: string; title: string; desc: string; Icon: LucideIcon }[] = [
-  {
-    idx: '01', title: 'Receive', Icon: Inbox,
-    desc: 'A potential client fills out your contact form. SmartLeads captures every detail instantly.',
-  },
-  {
-    idx: '02', title: 'Qualify', Icon: Cpu,
-    desc: 'Groq AI reads the message and scores intent, budget fit, and urgency from 0 to 100.',
-  },
-  {
-    idx: '03', title: 'Classify', Icon: Tag,
-    desc: 'Scored ≥70 = HOT · 40–69 = WARM · <40 = COLD. Logged to your private dashboard.',
-  },
-  {
-    idx: '04', title: 'Dispatch', Icon: Send,
-    desc: 'The right reply fires via Gmail through Make.com — under 10 seconds from first contact.',
-  },
+  { idx: '01', title: 'Receive',  desc: 'A potential client fills out your contact form. SmartLeads captures every detail instantly.', Icon: Inbox },
+  { idx: '02', title: 'Qualify',  desc: 'Groq AI reads the message and scores intent, budget fit, and urgency from 0 to 100.',          Icon: Cpu   },
+  { idx: '03', title: 'Classify', desc: 'Scored ≥70 = HOT · 40–69 = WARM · <40 = COLD. Logged to your private dashboard.',            Icon: Tag   },
+  { idx: '04', title: 'Dispatch', desc: 'The right reply fires via Gmail through Make.com — under 10 seconds from first contact.',     Icon: Send  },
 ];
 
-// Label copy — tells the visitor exactly what just happened to them
-const LABEL_COPY: Record<ScoreLabel, { emoji: string; headline: string; detail: string }> = {
-  HOT: {
-    emoji: '🔴',
-    headline: 'Priority reply sent.',
-    detail: 'This scored ≥ 70 — SmartLeads sent a detailed, high-priority response to get things moving fast.',
-  },
-  WARM: {
-    emoji: '🟡',
-    headline: 'Nurture email sent.',
-    detail: 'This scored 40–69 — SmartLeads sent a follow-up email to keep you warm without over-committing.',
-  },
-  COLD: {
-    emoji: '⚪',
-    headline: 'Polite decline sent.',
-    detail: 'This scored below 40 — SmartLeads sent a respectful no so you can focus on better-fit leads.',
-  },
+const SCORE_THEME: Record<ScoreLabel, { bar: string; bg: string; border: string }> = {
+  HOT:  { bar: '#ef4444', bg: 'rgba(239,68,68,0.06)',   border: 'rgba(239,68,68,0.2)'   },
+  WARM: { bar: '#f59e0b', bg: 'rgba(245,158,11,0.06)',  border: 'rgba(245,158,11,0.2)'  },
+  COLD: { bar: '#71717a', bg: 'rgba(113,113,122,0.06)', border: 'rgba(113,113,122,0.2)' },
 };
 
-const SCORE_THEME: Record<ScoreLabel, { bar: string; bg: string; border: string }> = {
-  HOT:  { bar: '#ef4444', bg: 'rgba(239,68,68,0.06)',  border: 'rgba(239,68,68,0.2)'   },
-  WARM: { bar: '#f59e0b', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.2)'  },
-  COLD: { bar: '#71717a', bg: 'rgba(113,113,122,0.06)',border: 'rgba(113,113,122,0.2)' },
+const LABEL_COPY: Record<ScoreLabel, { emoji: string; headline: string; detail: string }> = {
+  HOT:  { emoji: '🔴', headline: 'Priority reply sent.',  detail: 'Scored ≥70 — a high-priority reply was sent to move things forward fast.'      },
+  WARM: { emoji: '🟡', headline: 'Nurture email sent.',   detail: 'Scored 40–69 — a follow-up email keeps you warm without over-committing.'      },
+  COLD: { emoji: '⚪', headline: 'Polite decline sent.',  detail: 'Scored below 40 — a respectful no was sent so you can focus on better leads.'  },
 };
 
 const BADGE_VARIANT: Record<ScoreLabel, 'hot' | 'warm' | 'cold'> = {
@@ -141,7 +115,12 @@ export default function Home() {
           const r2 = await attempt();
           const d2 = await r2.json().catch(() => null);
           if (r2.ok && d2?.success) {
-            setState({ status: 'sent', email: form.email, result: { score: d2.score, label: d2.label, reason: d2.reason } });
+            setState({
+              status: 'sent',
+              email: form.email,
+              result: { score: d2.score, label: d2.label, reason: d2.reason },
+              emailPreview: d2.emailPreview ?? { subject: 'Re: Your project inquiry', body: '' },
+            });
             return;
           }
         } catch { /* fall through */ }
@@ -149,7 +128,13 @@ export default function Home() {
       setState({ status: 'error', message: data?.error ?? 'Something went wrong. Please try again.' });
       return;
     }
-    setState({ status: 'sent', email: form.email, result: { score: data.score, label: data.label, reason: data.reason } });
+
+    setState({
+      status: 'sent',
+      email: form.email,
+      result: { score: data.score, label: data.label, reason: data.reason },
+      emailPreview: data.emailPreview ?? { subject: 'Re: Your project inquiry', body: '' },
+    });
   }
 
   const canSubmit = state.status !== 'sending' && form.name.trim() !== '' && form.email.trim() !== '';
@@ -180,42 +165,29 @@ export default function Home() {
       <section className="bg-white px-6 pb-28 pt-20">
         <div className="mx-auto max-w-5xl">
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
+            initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }} transition={{ duration: 0.4 }}
             className="mb-16 text-center"
           >
             <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400">How it works</p>
-            <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-              Four steps. Zero delay.
-            </h2>
+            <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">Four steps. Zero delay.</h2>
             <p className="mx-auto mt-3 max-w-sm text-sm text-zinc-500">
-              From first contact to automated reply in under 10 seconds — with no manual input from you.
+              From first contact to automated reply in under 10 seconds — no manual input from you.
             </p>
           </motion.div>
 
           <div className="relative">
-            {/* Connector line */}
             <motion.div
               className="pointer-events-none absolute hidden h-px lg:block"
-              style={{
-                top: 44, left: '12.5%', right: '12.5%',
-                background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.08) 15%, rgba(0,0,0,0.08) 85%, transparent)',
-              }}
-              initial={{ scaleX: 0, originX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.6, ease: 'easeOut', delay: 0.1 }}
+              style={{ top: 44, left: '12.5%', right: '12.5%', background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.08) 15%, rgba(0,0,0,0.08) 85%, transparent)' }}
+              initial={{ scaleX: 0, originX: 0 }} whileInView={{ scaleX: 1 }}
+              viewport={{ once: true }} transition={{ duration: 1.6, ease: 'easeOut', delay: 0.1 }}
             />
-            {/* Node dots */}
             {[0.125, 0.375, 0.625, 0.875].map((pos, i) => (
               <motion.div key={i}
                 className="pointer-events-none absolute hidden h-2 w-2 rounded-full border border-black/12 bg-white shadow-sm lg:block"
                 style={{ top: 36, left: `${pos * 100}%`, transform: 'translateX(-50%)' }}
-                initial={{ scale: 0 }}
-                whileInView={{ scale: 1 }}
-                viewport={{ once: true }}
+                initial={{ scale: 0 }} whileInView={{ scale: 1 }} viewport={{ once: true }}
                 transition={{ delay: i * 0.18 + 0.6, type: 'spring', stiffness: 400, damping: 18 }}
               />
             ))}
@@ -229,8 +201,7 @@ export default function Home() {
                   style={{ willChange: 'transform' }}
                 >
                   <motion.div
-                    initial={{ opacity: 0, y: 32 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: '-20px' }}
                     transition={{ delay: i * 0.12, duration: 0.55, ease: [0.21, 1.02, 0.73, 1] }}
                     className="relative overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-6 transition-shadow duration-300 group-hover:shadow-[0_24px_60px_rgba(0,0,0,0.13),_0_6px_14px_rgba(0,0,0,0.07)]"
@@ -238,7 +209,6 @@ export default function Home() {
                   >
                     <span className="pointer-events-none absolute -bottom-2 -right-1 select-none font-black leading-none text-black/[0.04] transition-all duration-500 group-hover:text-black/[0.08]"
                       style={{ fontSize: '6rem' }} aria-hidden>{step.idx}</span>
-
                     <div className="relative mb-5 inline-flex">
                       <motion.div className="absolute inset-0 rounded-xl border border-black/18"
                         initial={{ scale: 1, opacity: 0 }}
@@ -248,15 +218,12 @@ export default function Home() {
                       />
                       <motion.div
                         className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-black/8 bg-zinc-50 transition-all duration-300 group-hover:border-zinc-900 group-hover:bg-zinc-900"
-                        initial={{ scale: 0 }}
-                        whileInView={{ scale: 1 }}
-                        viewport={{ once: true }}
+                        initial={{ scale: 0 }} whileInView={{ scale: 1 }} viewport={{ once: true }}
                         transition={{ delay: i * 0.12 + 0.25, type: 'spring', stiffness: 320, damping: 14 }}
                       >
                         <step.Icon className="h-4 w-4 text-zinc-500 transition-colors duration-300 group-hover:text-white" />
                       </motion.div>
                     </div>
-
                     <h3 className="mb-2 font-mono text-sm font-bold text-zinc-900">{step.title}</h3>
                     <p className="text-[13px] leading-relaxed text-zinc-500">{step.desc}</p>
                     <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-zinc-900 transition-all duration-500 group-hover:w-full" />
@@ -277,32 +244,27 @@ export default function Home() {
 
         <div className="relative z-10 mx-auto max-w-lg px-6">
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
+            initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }} transition={{ duration: 0.4 }}
             className="mb-8 text-center"
           >
             <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400">Live demo</p>
             <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Try it yourself.</h2>
             <p className="mx-auto mt-2 max-w-sm text-sm text-zinc-500">
-              Act like a potential client reaching out about a project — use your real email to see the automated reply.
+              Act like a potential client reaching out — use your real email to receive the automated reply.
             </p>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, delay: 0.1 }}
             className="overflow-hidden rounded-2xl border border-black/[0.06] bg-zinc-100"
             style={{ boxShadow: '0 12px 48px rgba(0,0,0,0.1), 0 3px 10px rgba(0,0,0,0.06)' }}
           >
             <div className="p-7">
-              {/* Instruction — tells visitor exactly what to do */}
               <p className="mb-6 text-sm leading-relaxed text-zinc-500">
                 Fill in your details as if you were enquiring about a project.
-                SmartLeads will score you and automatically send a reply to your inbox.
+                SmartLeads will score you and send a reply to your inbox.
               </p>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -312,39 +274,37 @@ export default function Home() {
                     value={form.name} onChange={set} autoComplete="off"
                     className="border-black/10 bg-white shadow-sm hover:border-black/20 focus-visible:border-black/25 focus-visible:ring-black/8" />
                 </div>
-
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="email">Your email <span className="text-zinc-400 font-normal">(gets the auto-reply)</span></Label>
+                  <Label htmlFor="email">
+                    Your email <span className="font-normal text-zinc-400">(gets the reply)</span>
+                  </Label>
                   <Input id="email" name="email" type="email" placeholder="jane@company.com"
                     value={form.email} onChange={set} autoComplete="off"
                     className="border-black/10 bg-white shadow-sm hover:border-black/20 focus-visible:border-black/25 focus-visible:ring-black/8" />
                 </div>
-
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="businessType">Your business type</Label>
                   <CustomSelect id="businessType" value={form.businessType}
                     onChange={val => setField('businessType', val)} options={BUSINESS_OPTIONS} />
                 </div>
-
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="budget">Your budget</Label>
                   <CustomSelect id="budget" value={form.budget}
                     onChange={val => setField('budget', val)} options={BUDGET_OPTIONS} />
                 </div>
-
                 <div className="col-span-full flex flex-col gap-2">
                   <Label htmlFor="message">Describe your project</Label>
                   <Textarea id="message" name="message"
                     placeholder="e.g. I need a booking website for my hair salon with online payments and appointment reminders…"
                     value={form.message} onChange={set} rows={3}
                     className="border-black/10 bg-white shadow-sm hover:border-black/20 focus-visible:border-black/25 focus-visible:ring-black/8 resize-none" />
-                  <p className="text-xs text-zinc-400">More detail → more accurate score. Try describing a real project.</p>
+                  <p className="text-xs text-zinc-400">More detail → more accurate score.</p>
                 </div>
               </div>
 
               <div className="mt-5 flex flex-col gap-3">
                 <Button type="button" size="lg" disabled={!canSubmit} onClick={submit}
-                  className="w-full border border-black/10 bg-white text-zinc-900 shadow-sm hover:bg-zinc-50 hover:text-zinc-900 hover:shadow-md"
+                  className="w-full border border-black/10 bg-white text-zinc-900 shadow-sm hover:bg-zinc-50 hover:shadow-md"
                   style={{ background: canSubmit ? '#ffffff' : 'rgba(255,255,255,0.6)' }}
                 >
                   {state.status === 'sending' ? (
@@ -359,56 +319,87 @@ export default function Home() {
 
                 <AnimatePresence mode="wait">
                   {state.status === 'sent' && (
-                    <motion.div key="result"
-                      initial={{ opacity: 0, y: 10, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.32, ease: 'easeOut' }}
-                      role="status"
-                      style={{ background: SCORE_THEME[state.result.label].bg, border: `1px solid ${SCORE_THEME[state.result.label].border}` }}
-                      className="rounded-xl px-4 py-4"
+                    <motion.div key="result" className="flex flex-col gap-3"
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.32, ease: 'easeOut' }}
                     >
-                      {/* Score row */}
-                      <div className="flex items-center justify-between gap-3 font-mono text-sm">
-                        <span className="text-zinc-500">LEAD_SCORE</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-zinc-900">
-                            {state.result.score}<span className="text-xs font-normal text-zinc-400">/100</span>
-                          </span>
-                          <Badge variant={BADGE_VARIANT[state.result.label]}>{state.result.label}</Badge>
+                      {/* ── Score card ── */}
+                      <div role="status"
+                        style={{ background: SCORE_THEME[state.result.label].bg, border: `1px solid ${SCORE_THEME[state.result.label].border}` }}
+                        className="rounded-xl px-4 py-4"
+                      >
+                        <div className="flex items-center justify-between gap-3 font-mono text-sm">
+                          <span className="text-zinc-500">LEAD_SCORE</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-zinc-900">
+                              {state.result.score}<span className="text-xs font-normal text-zinc-400">/100</span>
+                            </span>
+                            <Badge variant={BADGE_VARIANT[state.result.label]}>{state.result.label}</Badge>
+                          </div>
+                        </div>
+                        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-black/8">
+                          <motion.div className="h-full rounded-full"
+                            style={{ background: SCORE_THEME[state.result.label].bar }}
+                            initial={{ width: 0 }} animate={{ width: `${state.result.score}%` }}
+                            transition={{ duration: 1.1, ease: 'easeOut', delay: 0.12 }}
+                          />
+                        </div>
+                        <p className="mt-2.5 font-mono text-xs leading-relaxed text-zinc-500">
+                          <span className="text-zinc-300">// </span>{state.result.reason}
+                        </p>
+                        <div className="mt-3 rounded-lg border border-black/6 bg-white/70 px-3.5 py-3">
+                          <p className="text-xs font-semibold text-zinc-800">
+                            {LABEL_COPY[state.result.label].emoji}&nbsp; {LABEL_COPY[state.result.label].headline}
+                          </p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">
+                            {LABEL_COPY[state.result.label].detail}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Animated score bar */}
-                      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-black/8">
-                        <motion.div className="h-full rounded-full"
-                          style={{ background: SCORE_THEME[state.result.label].bar }}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${state.result.score}%` }}
-                          transition={{ duration: 1.1, ease: 'easeOut', delay: 0.12 }}
-                        />
-                      </div>
+                      {/* ── Email preview card — the key addition ── */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.35, duration: 0.4 }}
+                        className="overflow-hidden rounded-xl border border-black/8 bg-white"
+                        style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+                      >
+                        {/* Email client top bar */}
+                        <div className="flex items-center gap-2 border-b border-black/6 bg-zinc-50 px-4 py-2.5">
+                          <Mail className="h-3.5 w-3.5 text-zinc-400" />
+                          <span className="font-mono text-[10px] text-zinc-400">automated reply sent to {state.email}</span>
+                        </div>
 
-                      {/* AI reason */}
-                      <p className="mt-2.5 font-mono text-xs leading-relaxed text-zinc-500">
-                        <span className="text-zinc-300">// </span>{state.result.reason}
-                      </p>
+                        {/* Email headers */}
+                        <div className="border-b border-black/5 px-4 py-3 space-y-1.5">
+                          <div className="flex gap-3 text-xs">
+                            <span className="w-14 flex-shrink-0 text-zinc-400">From</span>
+                            <span className="text-zinc-700">Joshua Asiribo</span>
+                          </div>
+                          <div className="flex gap-3 text-xs">
+                            <span className="w-14 flex-shrink-0 text-zinc-400">To</span>
+                            <span className="text-zinc-700">{state.email}</span>
+                          </div>
+                          <div className="flex gap-3 text-xs">
+                            <span className="w-14 flex-shrink-0 text-zinc-400">Subject</span>
+                            <span className="font-medium text-zinc-900">{state.emailPreview.subject}</span>
+                          </div>
+                        </div>
 
-                      {/* ── What this means — the key UX fix ── */}
-                      <div className="mt-3 rounded-lg border border-black/6 bg-white/70 px-3.5 py-3">
-                        <p className="text-xs font-semibold text-zinc-800">
-                          {LABEL_COPY[state.result.label].emoji}&nbsp;&nbsp;
-                          {LABEL_COPY[state.result.label].headline}
-                        </p>
-                        <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">
-                          {LABEL_COPY[state.result.label].detail}
-                        </p>
-                      </div>
+                        {/* Email body */}
+                        <div className="px-4 py-4">
+                          <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-zinc-600">
+                            {state.emailPreview.body}
+                          </pre>
+                        </div>
 
-                      {/* Spam notice — sets expectations, prevents confusion */}
-                      <p className="mt-3 text-center font-mono text-[10px] text-zinc-400">
-                        📬 Automated reply sent to {state.email} · Check spam if you don&apos;t see it
-                      </p>
+                        {/* Spam notice */}
+                        <div className="border-t border-black/5 bg-zinc-50 px-4 py-2.5">
+                          <p className="font-mono text-[10px] text-zinc-400">
+                            📬 Check your spam / junk folder if you don&apos;t see it in your inbox
+                          </p>
+                        </div>
+                      </motion.div>
                     </motion.div>
                   )}
 
@@ -455,7 +446,6 @@ export default function Home() {
                   AI lead qualification for freelancers & agencies. Score every inquiry before it goes cold.
                 </p>
               </div>
-
               <div>
                 <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">Product</h4>
                 <ul className="space-y-3.5">
@@ -464,7 +454,6 @@ export default function Home() {
                   ))}
                 </ul>
               </div>
-
               <div>
                 <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">Built with</h4>
                 <ul className="space-y-3.5">
@@ -473,7 +462,6 @@ export default function Home() {
                   ))}
                 </ul>
               </div>
-
               <div>
                 <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400">Connect</h4>
                 <ul className="space-y-3.5">
