@@ -17,11 +17,10 @@ import { FloatingPaths }    from '@/components/ui/background-paths';
 /* ─── Types ──────────────────────────────────────────────────── */
 type ScoreLabel = 'HOT' | 'WARM' | 'COLD';
 type ScoreResult = { score: number; label: ScoreLabel; reason: string };
-type EmailPreview = { subject: string; body: string };
 type SubmitState =
   | { status: 'idle' }
   | { status: 'sending' }
-  | { status: 'sent'; result: ScoreResult; email: string; emailPreview: EmailPreview }
+  | { status: 'sent'; result: ScoreResult; email: string }
   | { status: 'error'; message: string };
 
 /* ─── Constants ──────────────────────────────────────────────── */
@@ -119,7 +118,6 @@ export default function Home() {
               status: 'sent',
               email: form.email,
               result: { score: d2.score, label: d2.label, reason: d2.reason },
-              emailPreview: d2.emailPreview ?? { subject: 'Re: Your project inquiry', body: '' },
             });
             return;
           }
@@ -133,7 +131,6 @@ export default function Home() {
       status: 'sent',
       email: form.email,
       result: { score: data.score, label: data.label, reason: data.reason },
-      emailPreview: data.emailPreview ?? { subject: 'Re: Your project inquiry', body: '' },
     });
   }
 
@@ -357,47 +354,23 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* ── Email preview card — the key addition ── */}
+                      {/* ── Honest status notice — no fabricated content ── */}
                       <motion.div
                         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.35, duration: 0.4 }}
                         className="overflow-hidden rounded-xl border border-black/8 bg-white"
                         style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
                       >
-                        {/* Email client top bar */}
-                        <div className="flex items-center gap-2 border-b border-black/6 bg-zinc-50 px-4 py-2.5">
-                          <Mail className="h-3.5 w-3.5 text-zinc-400" />
-                          <span className="font-mono text-[10px] text-zinc-400">automated reply sent to {state.email}</span>
-                        </div>
-
-                        {/* Email headers */}
-                        <div className="border-b border-black/5 px-4 py-3 space-y-1.5">
-                          <div className="flex gap-3 text-xs">
-                            <span className="w-14 flex-shrink-0 text-zinc-400">From</span>
-                            <span className="text-zinc-700">Joshua Asiribo</span>
+                        <div className="flex items-start gap-3 px-4 py-4">
+                          <Mail className="mt-0.5 h-4 w-4 flex-shrink-0 text-zinc-400" />
+                          <div>
+                            <p className="text-xs font-medium text-zinc-800">
+                              An automated reply is on its way to {state.email}
+                            </p>
+                            <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                              It usually arrives within a few seconds. If you don&apos;t see it in your inbox, please check your spam / junk folder.
+                            </p>
                           </div>
-                          <div className="flex gap-3 text-xs">
-                            <span className="w-14 flex-shrink-0 text-zinc-400">To</span>
-                            <span className="text-zinc-700">{state.email}</span>
-                          </div>
-                          <div className="flex gap-3 text-xs">
-                            <span className="w-14 flex-shrink-0 text-zinc-400">Subject</span>
-                            <span className="font-medium text-zinc-900">{state.emailPreview.subject}</span>
-                          </div>
-                        </div>
-
-                        {/* Email body */}
-                        <div className="px-4 py-4">
-                          <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-zinc-600">
-                            {state.emailPreview.body}
-                          </pre>
-                        </div>
-
-                        {/* Spam notice */}
-                        <div className="border-t border-black/5 bg-zinc-50 px-4 py-2.5">
-                          <p className="font-mono text-[10px] text-zinc-400">
-                            📬 Check your spam / junk folder if you don&apos;t see it in your inbox
-                          </p>
                         </div>
                       </motion.div>
                     </motion.div>
